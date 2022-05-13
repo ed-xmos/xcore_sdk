@@ -23,8 +23,11 @@
 
 // for uart_demo
 #include "task.h"
+#include "xcore/hwtimer.h"
 // #include "rtos_uart_tx.h"
 
+
+port_t tx_port = XS1_PORT_1J; //WIFI_MOSI
 
 void uart_demo(void)
 {
@@ -33,6 +36,19 @@ void uart_demo(void)
 
     rtos_printf("uart_demo\n");
 
+    rtos_uart_tx_t *ctx = NULL;
+    hwtimer_t tmr = hwtimer_alloc();
+
+    rtos_uart_tx_init(
+            ctx,
+            tx_port,
+            115200,
+            8,
+            UART_PARITY_NONE,
+            1,
+            tmr);
+
+    rtos_uart_tx_start(ctx);
    
     // const rtos_gpio_port_id_t button_port = rtos_gpio_port(PORT_BUTTONS);
    
