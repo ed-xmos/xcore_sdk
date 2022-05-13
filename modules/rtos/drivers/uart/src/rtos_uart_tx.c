@@ -6,9 +6,9 @@
 #include "rtos_uart_tx.h"
 
 __attribute__((fptrgroup("rtos_uart_tx_fptr_grp")))
-static void uart_tx_local_write(
+static void uart_tx_local_send(
         rtos_uart_tx_t *ctx,
-        uint8_t buf[],
+        uint8_t buff[],
         size_t n)
 {
     rtos_osal_mutex_get(&ctx->lock, RTOS_OSAL_WAIT_FOREVER);
@@ -18,8 +18,6 @@ static void uart_tx_local_write(
     }
 
     rtos_osal_mutex_put(&ctx->lock);
-
-    return res;
 }
 
 // __attribute__((fptrgroup("rtos_i2c_master_read_fptr_grp")))
@@ -128,43 +126,33 @@ static void uart_tx_local_write(
 // }
 
 void rtos_uart_tx_start(
-        rtos_i2c_master_t *i2c_master_ctx)
+        rtos_uart_tx_t *uart_tx_ctx)
 {
-    rtos_osal_mutex_create(&i2c_master_ctx->lock, "i2c_master_lock", RTOS_OSAL_RECURSIVE);
+    rtos_osal_mutex_create(&uart_tx_ctx->lock, "uart_tx_lock", RTOS_OSAL_RECURSIVE);
 
-    if (i2c_master_ctx->rpc_config != NULL && i2c_master_ctx->rpc_config->rpc_host_start != NULL) {
-        i2c_master_ctx->rpc_config->rpc_host_start(i2c_master_ctx->rpc_config);
-    }
+    // if (i2c_master_ctx->rpc_config != NULL && i2c_master_ctx->rpc_config->rpc_host_start != NULL) {
+    //     i2c_master_ctx->rpc_config->rpc_host_start(i2c_master_ctx->rpc_config);
+    // }
 }
 
-void rtos_i2c_master_init(
-        rtos_i2c_master_t *i2c_master_ctx,
-        const port_t p_scl,
-        const uint32_t scl_bit_position,
-        const uint32_t scl_other_bits_mask,
-        const port_t p_sda,
-        const uint32_t sda_bit_position,
-        const uint32_t sda_other_bits_mask,
-        hwtimer_t tmr,
-        const unsigned kbits_per_second)
-{
-    i2c_master_init(
-            &i2c_master_ctx->ctx,
-            p_scl, scl_bit_position, scl_other_bits_mask,
-            p_sda, sda_bit_position, sda_other_bits_mask,
-            kbits_per_second);
+void rtos_uart_tx_init(
+        rtos_uart_tx_t *ctx,
+        const port_t tx_port,
+        const uint32_t baud_rate,
+        const uint8_t num_data_bits,
+        const uart_parity_t parity,
+        const uint8_t stop_bits,
+        hwtimer_t tmr){
+    //uart init
+    uart_tx_blocking_init(
+            &ctx->ctx,
+            tx_port,
+            baud_rate,
+            num_data_bits,
+            parity,
+            stop_bits,
+            tmr);
 
-    xassert(tmr == 0);
-
-    /*
-     * TODO: Setting all of these here results in all these functions
-     * getting linked into the binary, regardless of whether or not
-     * they are used. Is there a clean way to prevent this?
-     */
-    i2c_master_ctx->rpc_config = NULL;
-    i2c_master_ctx->write = i2c_master_local_write;
-    i2c_master_ctx->read = i2c_master_local_read;
-    i2c_master_ctx->stop_bit_send = i2c_master_local_stop_bit_send;
-    i2c_master_ctx->reg_write = i2c_master_local_reg_write;
-    i2c_master_ctx->reg_read = i2c_master_local_reg_read;
+    // i2c_master_ctx->rpc_config = NULL;
+    ctx->send = uart_tx_local_send;
 }

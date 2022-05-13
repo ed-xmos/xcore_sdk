@@ -1,8 +1,8 @@
 // Copyright 2022 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
 
-#ifndef RTOS_I2C_MASTER_H_
-#define RTOS_I2C_MASTER_H_
+#ifndef RTOS_UART_TX_H_
+#define RTOS_UART_TX_H_
 
 /**
  * \addtogroup rtos_i2c_master_driver rtos_i2c_master_driver
@@ -27,10 +27,10 @@ typedef struct rtos_uart_tx_struct rtos_uart_tx_t;
  * The members in this struct should not be accessed directly.
  */
 struct rtos_uart_tx_struct {
-    rtos_driver_rpc_t *rpc_config;
+    // rtos_driver_rpc_t *rpc_config;
 
     __attribute__((fptrgroup("rtos_uart_tx_fptr_grp")))
-    i2c_res_t (*send)(rtos_uart_tx_t *, uint8_t buf[], size_t, size_t *);
+    void (*send)(rtos_uart_tx_t *, uint8_t buf[], size_t);
 
     uart_tx_t ctx;
 
@@ -75,7 +75,7 @@ inline void rtos_uart_tx(
         uint8_t buf[],
         size_t n)
 {
-    return ctx->send(ctx, buf, n, num_bytes_sent);
+    ctx->send(ctx, buf, n);
 }
 
 

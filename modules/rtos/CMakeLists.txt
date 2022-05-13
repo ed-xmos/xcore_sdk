@@ -4,6 +4,7 @@ add_subdirectory(drivers/clock_control)
 add_subdirectory(drivers/gpio)
 add_subdirectory(drivers/i2c)
 add_subdirectory(drivers/i2s)
+add_subdirectory(drivers/uart)
 add_subdirectory(drivers/intertile)
 add_subdirectory(drivers/l2_cache)
 add_subdirectory(drivers/mic_array)
@@ -40,6 +41,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL XCORE_XS3A)
             sdk::rtos::drivers::clock_control
             sdk::rtos::drivers::gpio
             sdk::rtos::drivers::i2c
+            sdk::rtos::drivers::uart
             sdk::rtos::drivers::intertile
             sdk::rtos::drivers::l2_cache
             sdk::rtos::drivers::qspi_io
