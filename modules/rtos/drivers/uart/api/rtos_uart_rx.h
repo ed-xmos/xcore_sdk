@@ -1,8 +1,8 @@
-// Copyright 2021 XMOS LIMITED.
+// Copyright 2022 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
 
-#ifndef RTOS_I2C_SLAVE_H_
-#define RTOS_I2C_SLAVE_H_
+#ifndef RTOS_UART_RX_H_
+#define RTOS_UART_RX_H_
 
 /**
  * \addtogroup rtos_i2c_slave_driver rtos_i2c_slave_driver
@@ -12,7 +12,7 @@
  */
 
 #include <xcore/channel_streaming.h>
-#include "i2c.h"
+#include "uart.h"
 
 #include "rtos_osal.h"
 #include "rtos_driver_rpc.h"
