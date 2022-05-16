@@ -15,6 +15,9 @@
 /* I/O and interrupt cores for Tile 0 */
 #define appconfI2C_IO_CORE                      3 /* Must be kept off core 0 with the RTOS tick ISR */
 #define appconfI2C_INTERRUPT_CORE               0 /* Must be kept off I/O cores. */
+#define appconfUART_RX_IO_CORE                  4 /* Must be kept off core 0 with the RTOS tick ISR */
+#define appconfUART_RX_INTERRUPT_CORE           1 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
+
 
 /* I/O and interrupt cores for Tile 1 */
 #define appconfPDM_MIC_IO_CORE                  1 /* Must be kept off I/O cores. Must be kept off core 0 with the RTOS tick ISR */
@@ -42,5 +45,6 @@
 #define appconfMEM_ANALYSIS_TASK_PRIORITY		( configMAX_PRIORITIES - 1 )
 #define appconfSPI_MASTER_TASK_PRIORITY		    ( configMAX_PRIORITIES - 1 )
 #define appconfQSPI_FLASH_TASK_PRIORITY		    ( configMAX_PRIORITIES - 1 )
+#define appconfUART_RX_TASK_PRIORITY            ( configMAX_PRIORITIES - 1 )
 
 #endif /* APP_CONF_H_ */

@@ -50,11 +50,6 @@ void uart_demo(void)
 
     rtos_uart_tx_start(&ctx);
    
-    // const rtos_gpio_port_id_t button_port = rtos_gpio_port(PORT_BUTTONS);
-   
-    // rtos_printf("enable led port %d\n", button_port);
-    // rtos_gpio_port_enable(gpio_ctx_t0, led_port);
- 
     // rtos_printf("enable button isr\n");
     // rtos_gpio_isr_callback_set(gpio_ctx_t0, button_port, button_callback, xTaskGetCurrentTaskHandle());
     // rtos_gpio_interrupt_enable(gpio_ctx_t0, button_port);
@@ -177,6 +172,18 @@ void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3) {
     (void)c0;
     (void)c2;
     (void)c3;
+
+
+    rtos_uart_rx_t uart_rx_ctx;
+
+    rtos_uart_rx_start(
+            &uart_rx_ctx,
+            NULL, //void *app_data
+            NULL, //rtos_uart_rx_start_cb_t start,
+            NULL, //rtos_uart_rx_complete_cb_t rx_complete,
+            NULL, //rtos_uart_rx_error_t error,
+            appconfUART_RX_INTERRUPT_CORE,
+            appconfUART_RX_TASK_PRIORITY);
 
     tile_common_init(c1);
 }

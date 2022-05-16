@@ -200,7 +200,17 @@ void uart_tx_deinit(
 
 
 
+void uart_rx_blocking_init(
+        uart_rx_t *uart,
+        port_t rx_port,
+        uint32_t baud_rate,
+        uint8_t data_bits,
+        uart_parity_t parity,
+        uint8_t stop_bits,
 
+        hwtimer_t tmr,
+        void(*uart_callback_fptr)(uart_callback_t callback_info)
+        );
 
 
 

@@ -37,6 +37,7 @@ void uart_tx_init(
 
     uart_cfg->tx_port = tx_port;
     uart_cfg->bit_time_ticks = XS1_TIMER_HZ / baud_rate;
+    printf("bit_time_ticks: %u\n", uart_cfg->bit_time_ticks);
     uart_cfg->next_event_time_ticks = 0;
     xassert(num_data_bits <= 8);
     uart_cfg->num_data_bits = num_data_bits;
