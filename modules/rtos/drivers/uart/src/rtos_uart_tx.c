@@ -1,7 +1,8 @@
 // Copyright 2022 XMOS LIMITED.
 // This Software is subject to the terms of the XMOS Public Licence: Version 1.
 
-#define DEBUG_UNIT RTOS_I2C
+#define DEBUG_UNIT RTOS_UART
+#define DEBUG_PRINT_ENABLE_RTOS_UART 1
 
 #include "rtos_uart_tx.h"
 
@@ -12,6 +13,7 @@ static void uart_tx_local_send(
         size_t n)
 {
     rtos_osal_mutex_get(&ctx->lock, RTOS_OSAL_WAIT_FOREVER);
+
 
     for(int i = 0; i < n; i++){
         uart_tx(&ctx->ctx, buff[i]);

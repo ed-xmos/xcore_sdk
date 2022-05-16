@@ -27,7 +27,7 @@
 // #include "rtos_uart_tx.h"
 
 
-port_t tx_port = XS1_PORT_1J; //WIFI_MOSI
+port_t tx_port = WIFI_WUP_RST_N;
 
 void uart_demo(void)
 {
@@ -36,11 +36,11 @@ void uart_demo(void)
 
     rtos_printf("uart_demo\n");
 
-    rtos_uart_tx_t *ctx = NULL;
+    rtos_uart_tx_t ctx;
     hwtimer_t tmr = hwtimer_alloc();
 
     rtos_uart_tx_init(
-            ctx,
+            &ctx,
             tx_port,
             115200,
             8,
@@ -48,7 +48,7 @@ void uart_demo(void)
             1,
             tmr);
 
-    rtos_uart_tx_start(ctx);
+    rtos_uart_tx_start(&ctx);
    
     // const rtos_gpio_port_id_t button_port = rtos_gpio_port(PORT_BUTTONS);
    
@@ -73,10 +73,13 @@ void uart_demo(void)
                 0x00000000UL,    /* Don't clear notification bits on entry */
                 0xFFFFFFFFUL,    /* Reset full notification value on exit */
                 &status,         /* Pass out notification value into status */
-                1000 ); /* Wait indefinitely until next notification */
+                100 ); /* Wait indefinitely until next notification */
                 // portMAX_DELAY ); /* Wait indefinitely until next notification */
 
         rtos_printf("uart_demo loop\n");
+
+        uint8_t tx_buff[] = {0x00, 0xff, 0xaa};
+        rtos_uart_tx(&ctx, tx_buff, sizeof(tx_buff));
 
 
         // buttons_val = rtos_gpio_port_in(gpio_ctx_t0, button_port);
