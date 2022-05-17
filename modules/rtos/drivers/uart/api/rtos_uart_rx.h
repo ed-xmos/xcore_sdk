@@ -150,11 +150,43 @@ struct rtos_uart_rx_struct {
 
     void *app_data;
 
+    rtos_uart_rx_start_cb_t rx_start_cb;
+    rtos_uart_rx_complete_cb_t rx_complete_cb;
+    rtos_uart_rx_error_t rx_error_cb;
+
     streaming_channel_t c;
     rtos_osal_event_group_t events;
     rtos_osal_thread_t hil_thread;
     rtos_osal_thread_t app_thread;
 };
+
+/**
+ * Initializes an RTOS UART slave driver instance.
+ * This must only be called by the tile that owns the driver instance. It should be
+ * called before starting the RTOS, and must be called before calling rtos_i2c_slave_start().
+ *
+ * \param i2c_slave_ctx A pointer to the I2C slave driver instance to initialize.
+ * \param io_core_mask  A bitmask representing the cores on which the low level I2C I/O thread
+ *                      created by the driver is allowed to run. Bit 0 is core 0, bit 1 is core 1,
+ *                      etc.
+ * \param p_scl         The port containing SCL. This must be a 1-bit port and
+ *                      different than \p p_sda.
+ * \param p_sda         The port containing SDA. This must be a 1-bit port and
+ *                      different than \p p_scl.
+ * \param device_addr   The 7-bit address of the slave device.
+ */
+ 
+void rtos_uart_rx_init(
+        rtos_uart_rx_t *uart_rx_ctx,
+        uint32_t io_core_mask,
+       
+        port_t rx_port,
+        uint32_t baud_rate,
+        uint8_t data_bits,
+        uart_parity_t parity,
+        uint8_t stop_bits,
+        hwtimer_t tmr);
+
 /**
  * Starts an RTOS I2C slave driver instance. This must only be called by the tile that
  * owns the driver instance. It must be called after starting the RTOS from an RTOS thread.
@@ -183,29 +215,8 @@ void rtos_uart_rx_start(
         unsigned interrupt_core_id,
         unsigned priority);
 
-/**
- * Initializes an RTOS I2C slave driver instance.
- * This must only be called by the tile that owns the driver instance. It should be
- * called before starting the RTOS, and must be called before calling rtos_i2c_slave_start().
- *
- * \param i2c_slave_ctx A pointer to the I2C slave driver instance to initialize.
- * \param io_core_mask  A bitmask representing the cores on which the low level I2C I/O thread
- *                      created by the driver is allowed to run. Bit 0 is core 0, bit 1 is core 1,
- *                      etc.
- * \param p_scl         The port containing SCL. This must be a 1-bit port and
- *                      different than \p p_sda.
- * \param p_sda         The port containing SDA. This must be a 1-bit port and
- *                      different than \p p_scl.
- * \param device_addr   The 7-bit address of the slave device.
- */
-// void rtos_uart_rx_init(
-//         rtos_uart_rx_t *uart_rx_ctx,
-//         uint32_t io_core_mask,
-//         const port_t p_scl,
-//         const port_t p_sda,
-//         uint8_t device_addr);
 
-//TODO DONT NEED THIS BECAUSE SINGLE DEVICE ONLY!???
+
 
 /**@}*/
 

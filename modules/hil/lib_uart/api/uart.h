@@ -223,7 +223,7 @@ void uart_rx_init(
         uint8_t stop_bits,
 
         hwtimer_t tmr,
-        uint8_t *tx_buff,
+        uint8_t *rx_buff,
         size_t buffer_size,
         void(*uart_callback_fptr)(uart_callback_t callback_info)
         );
