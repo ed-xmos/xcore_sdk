@@ -28,8 +28,9 @@
 
 
 port_t tx_port = WIFI_WUP_RST_N;
+port_t rx_port = WIFI_WIRQ;
 
-void uart_demo(void)
+void uart_tx_demo(void)
 {
     uint32_t status;
     // TimerHandle_t volume_up_timer;
@@ -98,11 +99,43 @@ void uart_demo(void)
     }
 }
 
+void uart_rx_start_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
+
+}
+void uart_rx_complete_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
+
+}
+void uart_rx_error_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
+
+}
+
+void uart_rx_demo(rtos_uart_rx_t *uart_rx_ctx){
+    void *app_data = NULL;
+
+    rtos_uart_rx_start(
+            uart_rx_ctx,
+            app_data,
+            uart_rx_start_cb,
+            uart_rx_complete_cb,
+            uart_rx_error_cb,
+            (1 << appconfUART_RX_INTERRUPT_CORE),
+            appconfUART_RX_TASK_PRIORITY);
+
+}
+
 void uart_demo_create(UBaseType_t priority)
 {
-    xTaskCreate((TaskFunction_t) uart_demo,
-                "uart_demo",
-                RTOS_THREAD_STACK_SIZE(uart_demo),
+
+    xTaskCreate((TaskFunction_t) uart_tx_demo,
+                "uart_tx_demo",
+                RTOS_THREAD_STACK_SIZE(uart_tx_demo),
+                NULL,
+                priority,
+                NULL);
+
+    xTaskCreate((TaskFunction_t) uart_rx_demo,
+                "uart_rx_demo",
+                RTOS_THREAD_STACK_SIZE(uart_rx_demo),
                 NULL,
                 priority,
                 NULL);
@@ -175,15 +208,19 @@ void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3) {
 
 
     rtos_uart_rx_t uart_rx_ctx;
+    hwtimer_t tmr = hwtimer_alloc();
+    const int32_t io_core_mask = (1 << appconfUART_RX_IO_CORE);
 
-    rtos_uart_rx_start(
+    rtos_uart_rx_init(
             &uart_rx_ctx,
-            NULL, //void *app_data
-            NULL, //rtos_uart_rx_start_cb_t start,
-            NULL, //rtos_uart_rx_complete_cb_t rx_complete,
-            NULL, //rtos_uart_rx_error_t error,
-            appconfUART_RX_INTERRUPT_CORE,
-            appconfUART_RX_TASK_PRIORITY);
+            io_core_mask,
+            rx_port,
+            115200,
+            8,
+            UART_PARITY_NONE,
+            1,
+            tmr);
+
 
     tile_common_init(c1);
 }

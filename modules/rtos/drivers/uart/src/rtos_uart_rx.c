@@ -184,7 +184,6 @@ void rtos_uart_rx_start(
     uart_rx_ctx->rx_error_cb = rx_error;
 
 
-    // __attribute__((fptrgroup("rtos_uart_rx_fptr_grp")))
     // void (*read)(rtos_uart_rx_t *, uint8_t buf[], size_t *num_bytes);
 
 

@@ -150,9 +150,9 @@ struct rtos_uart_rx_struct {
 
     void *app_data;
 
-    rtos_uart_rx_start_cb_t rx_start_cb;
-    rtos_uart_rx_complete_cb_t rx_complete_cb;
-    rtos_uart_rx_error_t rx_error_cb;
+    RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_start_cb_t rx_start_cb;
+    RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_complete_cb_t rx_complete_cb;
+    RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_error_t rx_error_cb;
 
     streaming_channel_t c;
     rtos_osal_event_group_t events;
