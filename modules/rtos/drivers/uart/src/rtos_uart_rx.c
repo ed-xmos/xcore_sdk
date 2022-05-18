@@ -176,6 +176,7 @@ void rtos_uart_rx_start(
         unsigned priority){
 
     rtos_printf("rtos_uart_rx_start\n");
+    rtos_printf("uart_rx_ctx: %p\n", uart_rx_ctx);
     
     //Init callbacks & args
     uart_rx_ctx->app_data = app_data;
