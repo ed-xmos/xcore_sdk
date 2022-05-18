@@ -16,6 +16,8 @@
 
 #include "rtos_osal.h"
 #include "rtos_driver_rpc.h"
+#include "stream_buffer.h"
+
 
 /**
  * The maximum number of bytes that a the RTOS I2C slave driver can receive from a master
@@ -155,6 +157,9 @@ struct rtos_uart_rx_struct {
     RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_error_t rx_error_cb;
 
     streaming_channel_t c;
+
+    StreamBufferHandle_t byte_buffer;
+
     rtos_osal_event_group_t events;
     rtos_osal_thread_t hil_thread;
     rtos_osal_thread_t app_thread;

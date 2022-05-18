@@ -9,6 +9,8 @@
 
 #include "rtos_interrupt.h"
 #include "rtos_uart_rx.h"
+#include "task.h"
+
 
 #define COMPLETE_CB_CODE       0
 #define STARTED_CB_CODE        1
@@ -23,28 +25,24 @@
 
 DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
 {
-    rtos_uart_rx_t *ctx = arg;
+    rtos_uart_rx_t *ctx = (rtos_uart_rx_t*)arg;
     int isr_action;
 
     isr_action = s_chan_in_byte(ctx->c.end_b);
 
     rtos_osal_event_group_set_bits(&ctx->events, 1 << isr_action);
-
-    rtos_printf("ISR!!\n");
+    if(isr_action == COMPLETE_CB_CODE){
+        uint8_t byte = s_chan_in_byte(ctx->c.end_b);
+        BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
+        size_t xBytesSent = xStreamBufferSendFromISR(ctx->byte_buffer, &byte, 1, &pxHigherPriorityTaskWoken);
+        if(xBytesSent != 1){
+            rtos_printf("ISR push buff full\n");
+        }
+        // taskYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
+        //TODO available in port?
+    }
 }
 
-// static void tx_state_clear(rtos_i2c_slave_t *ctx)
-// {
-//     ctx->tx_data = NULL;
-//     ctx->tx_data_len = 0;
-//     ctx->tx_data_i = 0;
-//     ctx->tx_data_sent = 0;
-// }
-
-// static void rx_state_clear(rtos_i2c_slave_t *ctx)
-// {
-//     ctx->rx_data_i = 0;
-// }
 
 
 // static int i2c_shutdown(rtos_i2c_slave_t *ctx) {
@@ -61,8 +59,9 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
     while(1){
         uint8_t byte = uart_rx(&ctx->ctx);
         //Now store byte and make notification
-        rtos_printf("UART Rx HIL received: 0x%x\n", byte);
+        // rtos_printf("UART Rx HIL received: 0x%x\n", byte);
         s_chan_out_byte(ctx->c.end_a, COMPLETE_CB_CODE);
+        s_chan_out_byte(ctx->c.end_a, byte);
     }
 }
 
@@ -86,10 +85,7 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
                 RTOS_OSAL_WAIT_FOREVER);
 
         if (flags & COMPLETE_CB_FLAG) {
-            // ctx->rx_complete_cb(ctx, ctx->app_data, ctx->data_buf, ctx->rx_data_i);
-            // rx_state_clear(ctx);
-            // s_chan_out_byte(ctx->c.end_b, 0);
-            rtos_printf("COMPLETE_CB_FLAG!!\n");
+            // rtos_printf("COMPLETE_CB_FLAG!!\n");
 
         } else {
             rtos_printf("Other OSAL event: 0x%x\n", flags);
@@ -182,7 +178,7 @@ void rtos_uart_rx_start(
         unsigned interrupt_core_id,
         unsigned priority){
     
-    //Init callbacks & args
+    /* Init callbacks & args */
     uart_rx_ctx->app_data = app_data;
     uart_rx_ctx->rx_start_cb = rx_start;
     uart_rx_ctx->rx_complete_cb = rx_complete_cb;
@@ -194,7 +190,7 @@ void rtos_uart_rx_start(
 
     rtos_osal_event_group_create(&uart_rx_ctx->events, "uart_rx_events");
 
-    // Ensure that the UART interrupt is enabled on the requested core 
+    /* Ensure that the UART interrupt is enabled on the requested core */
     uint32_t core_exclude_map = 0;
     rtos_osal_thread_core_exclusion_get(NULL, &core_exclude_map);
     rtos_osal_thread_core_exclusion_set(NULL, ~(1 << interrupt_core_id));
@@ -203,6 +199,10 @@ void rtos_uart_rx_start(
 
     /* Restore the core exclusion map for the calling thread */
     rtos_osal_thread_core_exclusion_set(NULL, core_exclude_map);
+
+    /* Setup buffer between ISR and receiving thread */
+
+    uart_rx_ctx->byte_buffer = xStreamBufferCreate( RTOS_UART_RX_BUF_LEN, 1);
 
     rtos_osal_thread_create(
             &uart_rx_ctx->app_thread,

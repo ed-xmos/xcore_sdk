@@ -47,18 +47,6 @@ void uart_tx_demo(void)
 
     rtos_uart_tx_start(&ctx);
    
-    // rtos_printf("enable button isr\n");
-    // rtos_gpio_isr_callback_set(gpio_ctx_t0, button_port, button_callback, xTaskGetCurrentTaskHandle());
-    // rtos_gpio_interrupt_enable(gpio_ctx_t0, button_port);
-
-    // rtos_printf("enable button timers\n");
-    // volume_up_timer = xTimerCreate(
-    //                         "vol_up",
-    //                         pdMS_TO_TICKS(appconfGPIO_VOLUME_RAPID_FIRE_MS),
-    //                         pdTRUE,
-    //                         NULL,
-    //                         vVolumeUpCallback );
-
     for (;;) {
 
         xTaskNotifyWait(
@@ -68,30 +56,9 @@ void uart_tx_demo(void)
                 100 ); /* Wait indefinitely until next notification */
                 // portMAX_DELAY ); /* Wait indefinitely until next notification */
 
-        rtos_printf("uart_demo loop\n");
-
         uint8_t tx_buff[] = {0x00, 0xff, 0xaa};
+        rtos_printf("uart send...\n");
         rtos_uart_tx(&ctx, tx_buff, sizeof(tx_buff));
-
-
-        // buttons_val = rtos_gpio_port_in(gpio_ctx_t0, button_port);
-        // buttonA = ( buttons_val >> 0 ) & 0x01;
-        // buttonB = ( buttons_val >> 1 ) & 0x01;
-
-        // /* Turn on LEDS based on buttons */
-        // rtos_gpio_port_out(gpio_ctx_t0, led_port, buttons_val);
-
-        //  Adjust volume based on LEDs 
-        // if( buttonA == 0 )   /* Up */
-        // {
-        //     xTimerStart( volume_up_timer, 0 );
-        //     volume_up();
-        //     // rtos_printf("volume up start\n");
-        // }
-        // else
-        // {
-        //     xTimerStop( volume_up_timer, 0 );
-        // }
     }
 }
 
@@ -118,7 +85,14 @@ void uart_rx_demo(void){
             appconfUART_RX_TASK_PRIORITY);
 
     for (;;) {
-        
+        uint8_t rx_byte = 0;
+        xStreamBufferReceive(   uart_rx_ctx->byte_buffer,
+                                &rx_byte,
+                                1,
+                                portMAX_DELAY);
+        rtos_printf("uart receive: 0x%x\n", rx_byte);
+
+
     }
 
 }
