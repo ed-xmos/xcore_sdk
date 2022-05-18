@@ -39,7 +39,7 @@ DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
             rtos_printf("ISR push buff full\n");
         }
         // taskYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
-        //TODO available in port?
+        //TODO is this available in xcore port?
     }
 }
 
@@ -56,7 +56,7 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
 
     rtos_printf("UART Rx HIL on tile %d core %d\n", THIS_XCORE_TILE, rtos_core_id_get());
 
-    while(1){
+    for (;;) {
         uint8_t byte = uart_rx(&ctx->ctx);
         //Now store byte and make notification
         // rtos_printf("UART Rx HIL received: 0x%x\n", byte);
@@ -200,9 +200,8 @@ void rtos_uart_rx_start(
     /* Restore the core exclusion map for the calling thread */
     rtos_osal_thread_core_exclusion_set(NULL, core_exclude_map);
 
-    /* Setup buffer between ISR and receiving thread */
-
-    uart_rx_ctx->byte_buffer = xStreamBufferCreate( RTOS_UART_RX_BUF_LEN, 1);
+    /* Setup buffer between ISR and receiving thread and set to trigger on single byte */
+    uart_rx_ctx->byte_buffer = xStreamBufferCreate(RTOS_UART_RX_BUF_LEN, 1);
 
     rtos_osal_thread_create(
             &uart_rx_ctx->app_thread,
