@@ -29,6 +29,8 @@ DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
     isr_action = s_chan_in_byte(ctx->c.end_b);
 
     rtos_osal_event_group_set_bits(&ctx->events, 1 << isr_action);
+
+    rtos_printf("ISR!!\n");
 }
 
 // static void tx_state_clear(rtos_i2c_slave_t *ctx)
@@ -60,6 +62,7 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
         uint8_t byte = uart_rx(&ctx->ctx);
         //Now store byte and make notification
         rtos_printf("UART Rx HIL received: 0x%x\n", byte);
+        s_chan_out_byte(ctx->c.end_a, COMPLETE_CB_CODE);
     }
 }
 
@@ -71,7 +74,7 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
         ctx->rx_start_cb(ctx, ctx->app_data);
     }
 
-    // send token (synch with HIL core)
+    // send token (synch with HIL logical core)
     s_chan_out_byte(ctx->c.end_b, 0);
 
     for (;;) {
@@ -85,7 +88,11 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
         if (flags & COMPLETE_CB_FLAG) {
             // ctx->rx_complete_cb(ctx, ctx->app_data, ctx->data_buf, ctx->rx_data_i);
             // rx_state_clear(ctx);
-            s_chan_out_byte(ctx->c.end_b, 0);
+            // s_chan_out_byte(ctx->c.end_b, 0);
+            rtos_printf("COMPLETE_CB_FLAG!!\n");
+
+        } else {
+            rtos_printf("Other OSAL event: 0x%x\n", flags);
         }
         //.....other callbacks here TODO
     }
@@ -174,9 +181,6 @@ void rtos_uart_rx_start(
         rtos_uart_rx_error_t rx_error,
         unsigned interrupt_core_id,
         unsigned priority){
-
-    rtos_printf("rtos_uart_rx_start\n");
-    rtos_printf("uart_rx_ctx: %p\n", uart_rx_ctx);
     
     //Init callbacks & args
     uart_rx_ctx->app_data = app_data;
