@@ -43,13 +43,13 @@ typedef enum {
 
 
 typedef enum {
-    UART_TX_EMPTY = 0x01,
+    UART_RX_COMPLETE = 0x00,
+    UART_TX_EMPTY,
     UART_START_BIT_ERROR,
     UART_PARITY_ERROR,
     UART_FRAMING_ERROR,
     UART_OVERRUN_ERROR,
     UART_UNDERRUN_ERROR,
-    UART_RX_COMPLETE
 } uart_callback_t;
 
 

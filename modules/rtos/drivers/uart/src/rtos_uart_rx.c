@@ -41,6 +41,19 @@ DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
         // taskYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
         //TODO is this available in xcore port?
     }
+
+    // swmem implementation example
+    //     if (rtos_swmem_read_request_isr) {
+    //     handled = rtos_swmem_read_request_isr(
+    //             (unsigned)(fill_slot - XS1_SWMEM_BASE + __swmem_address),
+    //             fill_buf);
+    //     if (handled) {
+    //         swmem_fill_populate_from_buffer(swmem_fill_res, fill_slot,
+    //                                         fill_buf);
+    //     }
+    // }
+
+
 }
 
 
@@ -57,7 +70,10 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
     rtos_printf("UART Rx HIL on tile %d core %d\n", THIS_XCORE_TILE, rtos_core_id_get());
 
     for (;;) {
+        rtos_interrupt_mask_all();
         uint8_t byte = uart_rx(&ctx->ctx);
+        rtos_interrupt_unmask_all();
+
         //Now store byte and make notification
         // rtos_printf("UART Rx HIL received: 0x%x\n", byte);
         s_chan_out_byte(ctx->c.end_a, COMPLETE_CB_CODE);
