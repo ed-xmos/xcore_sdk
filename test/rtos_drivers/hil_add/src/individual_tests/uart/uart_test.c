@@ -42,96 +42,109 @@
 // }
 // #endif /* ON_TILE(1) */
 
-// static int run_spi_tests(spi_test_ctx_t *test_ctx, chanend_t c)
-// {
-//     int retval = 0;
 
-//     do
-//     {
-//         sync(c);
-//         if (test_ctx->main_test[test_ctx->cur_test] != NULL)
-//         {
-//             SPI_MAIN_TEST_ATTR spi_main_test_t fn;
-//             fn = test_ctx->main_test[test_ctx->cur_test];
-//             int tmp = fn(test_ctx);
-//             retval = (retval != -1) ? tmp : retval;
-//         } else {
-//             spi_printf("Missing main_test callback on test %d", test_ctx->cur_test);
-//             retval = -1;
-//         }
-//     } while (++test_ctx->cur_test < test_ctx->test_cnt);
+RTOS_UART_RX_CALLBACK_ATTR
+void uart_rx_start_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
 
-//     return retval;
-// }
-
-// static void start_spi_devices(spi_test_ctx_t *test_ctx)
-// {
-//     spi_printf("MASTER rpc configure");
-//     rtos_spi_master_rpc_config(test_ctx->spi_master_ctx, SPI_MASTER_RPC_PORT, SPI_MASTER_RPC_HOST_TASK_PRIORITY);
-
-// #if ON_TILE(0)
-//     spi_printf("MASTER device start");
-//     rtos_spi_master_start(test_ctx->spi_master_ctx, configMAX_PRIORITIES-1);
-// #endif
-
-// #if ON_TILE(1)
-//     spi_printf("SLAVE start");
-//     rtos_spi_slave_start(test_ctx->spi_slave_ctx,
-//                          test_ctx,
-//                          spi_slave_start,
-//                          spi_slave_xfer_done,
-//                          SPI_SLAVE_ISR_CORE,
-//                          configMAX_PRIORITIES-1);
-// #endif
-
-//     spi_printf("Devices setup done");
-// }
-
-// static void register_spi_tests(spi_test_ctx_t *test_ctx)
-// {
-//     register_single_transaction_test(test_ctx);
-//     register_multiple_transaction_test(test_ctx);
-
-//     register_rpc_single_transaction_test(test_ctx);
-//     register_rpc_multiple_transaction_test(test_ctx);
-// }
-
-// static void spi_init_tests(spi_test_ctx_t *test_ctx, rtos_spi_master_t *spi_master_ctx, rtos_spi_master_device_t *spi_device_ctx, rtos_spi_slave_t *spi_slave_ctx)
-// {
-//     memset(test_ctx, 0, sizeof(spi_test_ctx_t));
-//     test_ctx->spi_master_ctx = spi_master_ctx;
-//     test_ctx->spi_device_ctx = spi_device_ctx;
-//     test_ctx->spi_slave_ctx = spi_slave_ctx;
-//     test_ctx->cur_test = 0;
-//     test_ctx->test_cnt = 0;
-
-//     register_spi_tests(test_ctx);
-//     configASSERT(test_ctx->test_cnt <= SPI_MAX_TESTS);
-// }
-
-int uart_device_tests(rtos_uart_tx_t *rtos_uart_tx_ctx, rtos_uart_rx_t *rtos_uart_rx_ctx){
-        uart_printf("All good here");
 }
 
-// int spi_device_tests(rtos_spi_master_t *spi_master_ctx, rtos_spi_master_device_t *spi_device_ctx, rtos_spi_slave_t *spi_slave_ctx, chanend_t c)
-// {
-//     spi_test_ctx_t test_ctx;
-//     int res = 0;
+RTOS_UART_RX_CALLBACK_ATTR
+void uart_rx_complete_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
 
-//     sync(c);
-//     spi_printf("Init test context");
-//     spi_init_tests(&test_ctx, spi_master_ctx, spi_device_ctx, spi_slave_ctx);
-//     spi_printf("Test context init");
+}
 
-//     sync(c);
-//     spi_printf("Start devices");
-//     start_spi_devices(&test_ctx);
-//     spi_printf("Devices started");
+RTOS_UART_RX_CALLBACK_ATTR
+void uart_rx_error_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
 
-//     sync(c);
-//     spi_printf("Start tests");
-//     res = run_spi_tests(&test_ctx, c);
+}
 
-//     sync(c);   // Sync before return
-//     return res;
-// }
+static int run_uart_tests(uart_test_ctx_t *test_ctx)
+{
+    int retval = 0;
+
+    do
+    {
+        uint8_t tx_buff[] = {0xed, 0x00, 0x77, 0xed, 0x00, 0x77, 0xed, 0x00, 0x55, 0x55, 0x55, 0x55};
+        rtos_uart_tx(test_ctx->rtos_uart_tx_ctx, tx_buff, sizeof(tx_buff));
+    
+        uint8_t rx_buff[sizeof(tx_buff)] = {0};
+        size_t num_rx = xStreamBufferReceive(   test_ctx->rtos_uart_rx_ctx->byte_buffer,
+                                                rx_buff,
+                                                sizeof(tx_buff),
+                                                portMAX_DELAY);
+        int length_same = (num_rx == sizeof(tx_buff));        
+        int array_different = memcmp(tx_buff, rx_buff, sizeof(tx_buff));
+        uart_printf("uart loopback result len: %s, contents: %s", array_different ? "FAIL" : "PASS", length_same ? "PASS" : "FAIL");
+
+        if (!length_same || array_different){
+            retval = -1;
+        }
+    } while (++test_ctx->cur_test < test_ctx->test_cnt);
+
+    return retval;
+}
+
+static void start_uart_devices(uart_test_ctx_t *test_ctx)
+{
+#if ON_TILE(1)
+    void *app_data = NULL;
+
+    uart_printf("RX start");
+    rtos_uart_rx_start(
+        test_ctx->rtos_uart_rx_ctx,
+        app_data,
+        uart_rx_start_cb,
+        uart_rx_complete_cb,
+        uart_rx_error_cb,
+        (1 << UART_RX_ISR_CORE),
+        appconfSTARTUP_TASK_PRIORITY);
+
+    uart_printf("TX start");
+    rtos_uart_tx_start(test_ctx->rtos_uart_tx_ctx);
+#endif
+
+    uart_printf("Devices setup done");
+}
+
+static void register_uart_tests(uart_test_ctx_t *test_ctx)
+{
+    // register_single_transaction_test(test_ctx);
+    // register_multiple_transaction_test(test_ctx);
+
+    // register_rpc_single_transaction_test(test_ctx);
+    // register_rpc_multiple_transaction_test(test_ctx);
+}
+
+static void uart_init_tests(uart_test_ctx_t *test_ctx, rtos_uart_tx_t *rtos_uart_tx_ctx, rtos_uart_rx_t *rtos_uart_rx_ctx)
+{
+    memset(test_ctx, 0, sizeof(uart_test_ctx_t));
+    test_ctx->rtos_uart_tx_ctx = rtos_uart_tx_ctx;
+    test_ctx->rtos_uart_rx_ctx = rtos_uart_rx_ctx;
+
+    test_ctx->cur_test = 0;
+    test_ctx->test_cnt = UART_MAX_TESTS;
+
+    register_uart_tests(test_ctx);
+    configASSERT(test_ctx->test_cnt <= UART_MAX_TESTS);
+}
+
+
+
+int uart_device_tests(rtos_uart_tx_t *rtos_uart_tx_ctx, rtos_uart_rx_t *rtos_uart_rx_ctx)
+{
+    uart_test_ctx_t test_ctx;
+    int res = 0;
+
+    uart_printf("Init test context");
+    uart_init_tests(&test_ctx, rtos_uart_tx_ctx, rtos_uart_rx_ctx);
+    uart_printf("Test context init");
+
+    uart_printf("Start devices");
+    start_uart_devices(&test_ctx);
+    uart_printf("Devices started");
+
+    uart_printf("Start tests");
+    res = run_uart_tests(&test_ctx);
+
+    return res;
+}

@@ -8,26 +8,25 @@
 
 #define uart_printf( FMT, ... )       module_printf("UART", FMT, ##__VA_ARGS__)
 
-// #define SPI_MAX_TESTS   4
+#define UART_MAX_TESTS   4
 
 // #define SPI_MAIN_TEST_ATTR          __attribute__((fptrgroup("rtos_test_spi_main_test_fptr_grp")))
 // #define SPI_SLAVE_XFER_DONE_ATTR    __attribute__((fptrgroup("rtos_test_spi_slave_xfer_done_fptr_grp")))
 
-// typedef struct spi_test_ctx spi_test_ctx_t;
+typedef struct uart_test_ctx uart_test_ctx_t;
 
-// struct spi_test_ctx {
-//     uint32_t cur_test;
-//     uint32_t test_cnt;
-//     char *name[SPI_MAX_TESTS];
+struct uart_test_ctx {
+    uint32_t cur_test;
+    uint32_t test_cnt;
+    char *name[UART_MAX_TESTS];
 
-//     rtos_spi_master_t *spi_master_ctx;
-//     rtos_spi_master_device_t *spi_device_ctx;
-//     rtos_spi_slave_t *spi_slave_ctx;
-//     int slave_success[SPI_MAX_TESTS];
+    rtos_uart_tx_t *rtos_uart_tx_ctx;
+    rtos_uart_rx_t *rtos_uart_rx_ctx;
+    int rx_success[UART_MAX_TESTS];
 
-//     SPI_MAIN_TEST_ATTR int (*main_test[SPI_MAX_TESTS])(spi_test_ctx_t *ctx);
-//     SPI_SLAVE_XFER_DONE_ATTR int (*slave_xfer_done[SPI_MAX_TESTS])(rtos_spi_slave_t *ctx, void *app_data);
-// };
+    // SPI_MAIN_TEST_ATTR int (*main_test[SPI_MAX_TESTS])(spi_test_ctx_t *ctx);
+    // SPI_SLAVE_XFER_DONE_ATTR int (*slave_xfer_done[SPI_MAX_TESTS])(rtos_spi_slave_t *ctx, void *app_data);
+};
 
 // typedef int (*spi_main_test_t)(spi_test_ctx_t *ctx);
 // typedef int (*spi_slave_xfer_done_t)(rtos_spi_slave_t *ctx, void *app_data);

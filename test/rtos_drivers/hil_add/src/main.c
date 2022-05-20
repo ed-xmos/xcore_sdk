@@ -88,6 +88,7 @@ void vApplicationDaemonTaskStartup(void *arg)
 void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
 {
     (void) c0;
+    //Devices get init'd here
     board_tile0_init(c1,
                      intertile_ctx,
                      spi_master_ctx,
@@ -114,11 +115,14 @@ void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
 #if ON_TILE(1)
 void main_tile1(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
 {
+    //Devices get init'd here
     board_tile1_init(c0,
                      intertile_ctx,
                      spi_master_ctx,
                      test_spi_device_ctx,
-                     spi_slave_ctx);
+                     spi_slave_ctx,
+                     rtos_uart_tx_ctx,
+                     rtos_uart_rx_ctx);
     (void) c1;
     (void) c2;
     (void) c3;

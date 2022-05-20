@@ -41,6 +41,7 @@ void rtos_uart_tx_init(
         const uart_parity_t parity,
         const uint8_t stop_bits,
         hwtimer_t tmr){
+    
     //uart init
     uart_tx_blocking_init(
             &ctx->ctx,

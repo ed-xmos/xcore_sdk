@@ -4,6 +4,9 @@
 #ifndef RTOS_UART_TX_H_
 #define RTOS_UART_TX_H_
 
+
+#define RTOS_UART_TX_CALLBACK_ATTR  __attribute__((fptrgroup("rtos_uart_tx_fptr_grp")))
+
 /**
  * \addtogroup rtos_i2c_master_driver rtos_i2c_master_driver
  *
@@ -28,9 +31,8 @@ typedef struct rtos_uart_tx_struct rtos_uart_tx_t;
  */
 struct rtos_uart_tx_struct {
     // rtos_driver_rpc_t *rpc_config;
-
-    __attribute__((fptrgroup("rtos_uart_tx_fptr_grp")))
-    void (*send)(rtos_uart_tx_t *, uint8_t buf[], size_t);
+    
+    RTOS_UART_TX_CALLBACK_ATTR void (*send)(rtos_uart_tx_t *, uint8_t buf[], size_t);
 
     uart_tx_t ctx;
 
