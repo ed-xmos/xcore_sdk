@@ -91,7 +91,7 @@ void board_tile1_init(
     rtos_uart_tx_init(
             rtos_uart_tx_ctx,
             XS1_PORT_1E, /* Looped back to 1P on tile 1 */
-            921600,
+            1000000,
             8,
             UART_PARITY_ODD,
             1,
@@ -104,7 +104,7 @@ void board_tile1_init(
             rtos_uart_rx_ctx,
             UART_RX_CORE_MASK,
             XS1_PORT_1P, /* Looped back to 1E on tile 1 */
-            921600,
+            1000000,
             8,
             UART_PARITY_ODD,
             1,
