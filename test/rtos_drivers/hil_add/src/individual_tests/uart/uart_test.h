@@ -6,7 +6,7 @@
 
 #include "rtos_test/rtos_test_utils.h"
 
-// #define spi_printf( FMT, ... )       module_printf("SPI", FMT, ##__VA_ARGS__)
+#define uart_printf( FMT, ... )       module_printf("UART", FMT, ##__VA_ARGS__)
 
 // #define SPI_MAX_TESTS   4
 
@@ -32,7 +32,7 @@
 // typedef int (*spi_main_test_t)(spi_test_ctx_t *ctx);
 // typedef int (*spi_slave_xfer_done_t)(rtos_spi_slave_t *ctx, void *app_data);
 
-// int spi_device_tests(rtos_spi_master_t *spi_master_ctx, rtos_spi_master_device_t *spi_device_ctx, rtos_spi_slave_t *spi_slave_ctx, chanend_t c);
+int uart_device_tests(rtos_uart_tx_t *rtos_uart_tx_ctx, rtos_uart_rx_t *rtos_uart_rx_ctx);
 
 // /* Local Tests */
 // void register_single_transaction_test(spi_test_ctx_t *test_ctx);

@@ -12,6 +12,8 @@
 /* Library headers */
 #include "rtos_gpio.h"
 #include "rtos_spi_master.h"
+#include "rtos_uart_tx.h"
+#include "rtos_uart_rx.h"
 
 /* App headers */
 #include "app_conf.h"
@@ -28,6 +30,11 @@ static rtos_intertile_t *intertile_ctx = &intertile_ctx_s;
 static rtos_spi_master_t *spi_master_ctx = &spi_master_ctx_s;
 static rtos_spi_master_device_t *test_spi_device_ctx = &spi_master_device_ctx_s;
 static rtos_spi_slave_t *spi_slave_ctx = &spi_slave_ctx_s;
+
+static rtos_uart_tx_t rtos_uart_tx_ctx_s;
+static rtos_uart_rx_t rtos_uart_rx_ctx_s;
+static rtos_uart_tx_t *rtos_uart_tx_ctx = &rtos_uart_tx_ctx_s;
+static rtos_uart_rx_t *rtos_uart_rx_ctx = &rtos_uart_rx_ctx_s;
 
 chanend_t other_tile_c;
 
@@ -48,6 +55,17 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char* pcTaskName )
 void vApplicationDaemonTaskStartup(void *arg)
 {
     rtos_intertile_start(intertile_ctx);
+
+    if (RUN_UART_TESTS) {
+        if (uart_device_tests(rtos_uart_tx_ctx, rtos_uart_rx_ctx) != 0)
+        {
+            test_printf("FAIL UART");
+        } else {
+            test_printf("PASS UART");
+        }
+    } else {
+        test_printf("SKIP UART");
+    }
 
     if (RUN_SPI_TESTS) {
         if (spi_device_tests(spi_master_ctx, test_spi_device_ctx, spi_slave_ctx, other_tile_c) != 0)
