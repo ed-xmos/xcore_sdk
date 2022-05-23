@@ -4,95 +4,62 @@
 #ifndef RTOS_UART_TX_H_
 #define RTOS_UART_TX_H_
 
-
-#define RTOS_UART_TX_CALLBACK_ATTR  __attribute__((fptrgroup("rtos_uart_tx_fptr_grp")))
+/**
+ * This attribute must be specified on the RTOS UART tx call function
+ * provided by the application to allow compiler stack calculation.
+ */
+#define RTOS_UART_TX_CALL_ATTR  __attribute__((fptrgroup("rtos_uart_tx_fptr_grp")))
 
 /**
- * \addtogroup rtos_i2c_master_driver rtos_i2c_master_driver
+ * \addtogroup rtos_uart_tx_driver rtos_uart_tx_driver
  *
- * The public API for using the RTOS I2C master driver.
+ * The public API for using the RTOS UART tx driver.
  * @{
  */
 
 #include "uart.h"
 
 #include "rtos_osal.h"
-// #include "rtos_driver_rpc.h"
 
 /**
- * Typedef to the RTOS I2C master driver instance struct.
+ * Typedef to the RTOS UART tx driver instance struct.
  */
 typedef struct rtos_uart_tx_struct rtos_uart_tx_t;
 
 /**
- * Struct representing an RTOS I2C master driver instance.
+ * Struct representing an RTOS UART tx driver instance.
  *
  * The members in this struct should not be accessed directly.
  */
 struct rtos_uart_tx_struct {
-    // rtos_driver_rpc_t *rpc_config;
-    
-    RTOS_UART_TX_CALLBACK_ATTR void (*send)(rtos_uart_tx_t *, uint8_t buf[], size_t);
-
-    uart_tx_t ctx;
-
+    RTOS_UART_TX_CALL_ATTR void (*write)(rtos_uart_tx_t *, uint8_t buf[], size_t);
+    uart_tx_t dev;
     rtos_osal_mutex_t lock;
 };
 
-// #include "rtos_i2c_master_rpc.h"
 
 /**
- * \addtogroup rtos_i2c_master_driver_core rtos_i2c_master_driver_core
+ * \addtogroup rtos_uart_tx_driver_core rtos_uart_tx_driver_core
  *
- * The core functions for using an RTOS I2C master driver instance after
- * it has been initialized and started. These functions may be used
- * by both the host and any client tiles that RPC has been enabled for.
+ * The core functions for using an RTOS UART tx driver instance after
+ * it has been initialized and started. 
  * @{
  */
 
 /**
- * Writes data to an I2C bus as a master.
+ * Writes data to an UART instance.
  *
- * \param ctx             A pointer to the I2C master driver instance to use.
- * \param device_addr     The address of the device to write to.
+ * \param ctx             A pointer to the UART Tx driver instance to use.
  * \param buf             The buffer containing data to write.
  * \param n               The number of bytes to write.
- * \param num_bytes_sent  The function will set this value to the
- *                        number of bytes actually sent. On success, this
- *                        will be equal to ``n`` but it will be less if the
- *                        slave sends an early NACK on the bus and the
- *                        transaction fails.
- * \param send_stop_bit   If this is non-zero then a stop bit
- *                        will be sent on the bus after the transaction.
- *                        This is usually required for normal operation. If
- *                        this parameter is zero then no stop bit will
- *                        be omitted. In this case, no other task can use
- *                        the component until a stop bit has been sent.
- *
- * \retval               ``I2C_ACK`` if the write was acknowledged by the device.
- * \retval               ``I2C_NACK``otherwise.
  */
-inline void rtos_uart_tx(
+inline void rtos_uart_tx_write(
         rtos_uart_tx_t *ctx,
         uint8_t buf[],
         size_t n)
 {
-    ctx->send(ctx, buf, n);
+    ctx->write(ctx, buf, n);
 }
-
-
-/**
- * Starts an RTOS I2C master driver instance. This must only be called by the tile that
- * owns the driver instance. It may be called either before or after starting
- * the RTOS, but must be called before any of the core I2C master driver functions are
- * called with this instance.
- *
- * rtos_i2c_master_init() must be called on this I2C master driver instance prior to calling this.
- *
- * \param i2c_master_ctx A pointer to the I2C master driver instance to start.
- */
-void rtos_uart_tx_start(
-        rtos_uart_tx_t *ctx);
 
 /**
  * Initializes an RTOS I2C master driver instance.
@@ -124,6 +91,20 @@ void rtos_uart_tx_init(
         const uart_parity_t parity,
         const uint8_t stop_bits,
         hwtimer_t tmr);
+
+/**
+ * Starts an RTOS UART tx driver instance. This must only be called by the tile that
+ * owns the driver instance. It may be called either before or after starting
+ * the RTOS, but must be called before any of the core UART tx driver functions are
+ * called with this instance.
+ *
+ * rtos_uart_tx_init() must be called on this UART tx driver instance prior to calling this.
+ *
+ * \param rtos_uart_tx_t A pointer to the UART tx driver instance to start.
+ */
+void rtos_uart_tx_start(
+        rtos_uart_tx_t *ctx);
+
 
 /**@}*/
 

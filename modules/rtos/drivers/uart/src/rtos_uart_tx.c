@@ -6,17 +6,16 @@
 
 #include "rtos_uart_tx.h"
 
-__attribute__((fptrgroup("rtos_uart_tx_fptr_grp")))
-static void uart_tx_local_send(
+RTOS_UART_TX_CALL_ATTR
+static void uart_tx_local_write(
         rtos_uart_tx_t *ctx,
         uint8_t buff[],
         size_t n)
 {
     rtos_osal_mutex_get(&ctx->lock, RTOS_OSAL_WAIT_FOREVER);
 
-
     for(int i = 0; i < n; i++){
-        uart_tx(&ctx->ctx, buff[i]);
+        uart_tx(&ctx->dev, buff[i]);
     }
 
     rtos_osal_mutex_put(&ctx->lock);
@@ -27,10 +26,6 @@ void rtos_uart_tx_start(
         rtos_uart_tx_t *uart_tx_ctx)
 {
     rtos_osal_mutex_create(&uart_tx_ctx->lock, "uart_tx_lock", RTOS_OSAL_RECURSIVE);
-
-    // if (i2c_master_ctx->rpc_config != NULL && i2c_master_ctx->rpc_config->rpc_host_start != NULL) {
-    //     i2c_master_ctx->rpc_config->rpc_host_start(i2c_master_ctx->rpc_config);
-    // }
 }
 
 void rtos_uart_tx_init(
@@ -44,7 +39,7 @@ void rtos_uart_tx_init(
     
     //uart init
     uart_tx_blocking_init(
-            &ctx->ctx,
+            &ctx->dev,
             tx_port,
             baud_rate,
             num_data_bits,
@@ -52,6 +47,5 @@ void rtos_uart_tx_init(
             stop_bits,
             tmr);
 
-    // i2c_master_ctx->rpc_config = NULL;
-    ctx->send = uart_tx_local_send;
+    ctx->write = uart_tx_local_write;
 }

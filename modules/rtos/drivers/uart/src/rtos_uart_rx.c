@@ -52,15 +52,46 @@ DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
     //                                         fill_buf);
     //     }
     // }
-
-
 }
 
+RTOS_UART_RX_CALLBACK_ATTR
+void uart_rx_error_callback(void *app_data){
+    rtos_uart_rx_t *ctx = (rtos_uart_rx_t*)app_data;
+    uart_callback_code_t cb_code = ctx->dev.cb_code;
+    switch(cb_code){
+
+        case UART_START_BIT_ERROR:
+            rtos_printf("UART_START_BIT_ERROR\n");
+            break;
+        case UART_PARITY_ERROR:
+            rtos_printf("UART_PARITY_ERROR\n");
+            break;
+        case UART_FRAMING_ERROR:
+            rtos_printf("UART_FRAMING_ERROR\n");
+            break;
+        case UART_OVERRUN_ERROR:
+            rtos_printf("UART_OVERRUN_ERROR\n");
+            break;
 
 
-// static int i2c_shutdown(rtos_i2c_slave_t *ctx) {
-//     return 0;
-// }
+        // These should not be possible
+        case UART_UNDERRUN_ERROR:
+            rtos_printf("UART_UNDERRUN_ERROR\n");
+            break;
+        case UART_TX_EMPTY:
+            rtos_printf("UART_TX_EMPTY\n");
+            break;
+        case UART_RX_COMPLETE:
+            rtos_printf("UART_RX_COMPLETE\n");
+            break;
+    }
+}
+
+RTOS_UART_RX_CALLBACK_ATTR
+void uart_rx_complete_callback(void *app_data){
+    rtos_printf("UART_RX_COMPLETE\n");
+   
+}
 
 static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
 {
@@ -71,15 +102,16 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
 
     for (;;) {
         rtos_interrupt_mask_all();
-        uint8_t byte = uart_rx(&ctx->ctx);
+        uint8_t byte = uart_rx(&ctx->dev);
         rtos_interrupt_unmask_all();
 
-        //Now store byte and make notification
-        // rtos_printf("UART Rx HIL received: 0x%x\n", byte);
+        // Now store byte and make notification
         s_chan_out_byte(ctx->c.end_a, COMPLETE_CB_CODE);
         s_chan_out_byte(ctx->c.end_a, byte);
     }
 }
+
+
 
 static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
 {
@@ -111,31 +143,7 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
 }
 
 
-UART_CALLBACK_ATTR void uart_rx_callback(uart_callback_t callback_info){
-    switch(callback_info){
-        case UART_TX_EMPTY:
-            printstrln("UART_TX_EMPTY\n");
-            break;
-        case UART_START_BIT_ERROR:
-            printstrln("UART_START_BIT_ERROR\n");
-            break;
-        case UART_PARITY_ERROR:
-            printstrln("UART_PARITY_ERROR\n");
-            break;
-        case UART_FRAMING_ERROR:
-            printstrln("UART_FRAMING_ERROR\n");
-            break;
-        case UART_OVERRUN_ERROR:
-            printstrln("UART_OVERRUN_ERROR\n");
-            break;
-        case UART_UNDERRUN_ERROR:
-            printstrln("UART_UNDERRUN_ERROR\n");
-            break;
-        case UART_RX_COMPLETE:
-            printstrln("UART_RX_COMPLETE\n");
-            break;
-    }
-}
+
 
 
 void rtos_uart_rx_init(
@@ -154,7 +162,7 @@ void rtos_uart_rx_init(
     rtos_printf("rtos_uart_rx_init\n");
 
     uart_rx_init(
-        &uart_rx_ctx->ctx,
+        &uart_rx_ctx->dev,
         rx_port,
         baud_rate,
         data_bits,
@@ -163,7 +171,9 @@ void rtos_uart_rx_init(
         tmr,
         NULL,
         0,
-        uart_rx_callback
+        uart_rx_complete_callback,
+        uart_rx_error_callback,
+        uart_rx_ctx
         );
  
 
@@ -188,7 +198,7 @@ void rtos_uart_rx_init(
 void rtos_uart_rx_start(
         rtos_uart_rx_t *uart_rx_ctx,
         void *app_data,
-        rtos_uart_rx_start_cb_t rx_start,
+        rtos_uart_rx_started_cb_t rx_start,
         rtos_uart_rx_complete_cb_t rx_complete_cb,
         rtos_uart_rx_error_t rx_error,
         unsigned interrupt_core_id,

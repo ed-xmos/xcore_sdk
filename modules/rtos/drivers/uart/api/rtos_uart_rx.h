@@ -5,9 +5,9 @@
 #define RTOS_UART_RX_H_
 
 /**
- * \addtogroup rtos_i2c_slave_driver rtos_i2c_slave_driver
+ * \addtogroup rtos_uart_rx_driver rtos_uart_rx_driver
  *
- * The public API for using the RTOS I2C slave driver.
+ * The public API for using the RTOS UART rx driver.
  * @{
  */
 
@@ -15,144 +15,95 @@
 #include "uart.h"
 
 #include "rtos_osal.h"
-#include "rtos_driver_rpc.h"
 #include "stream_buffer.h"
 
 
 /**
- * The maximum number of bytes that a the RTOS I2C slave driver can receive from a master
- * in a single write transaction.
+ * The maximum number of bytes that a the RTOS UART rx driver can receive from a master
+ * in a single write transaction before being read/emptied.
  */
 #ifndef RTOS_UART_RX_BUF_LEN
-#define RTOS_UART_RX_BUF_LEN 256
+#define RTOS_UART_RX_BUF_LEN 16
 #endif
 
 /**
- * This attribute must be specified on all RTOS I2C slave callback functions
- * provided by the application.
+ * This attribute must be specified on all RTOS UART rx callback functions
+ * provided by the application to allow compiler stack calculation.
  */
-#define RTOS_UART_RX_CALLBACK_ATTR __attribute__((fptrgroup("rtos_uart_rx_cb_fptr_grp")))
+#define RTOS_UART_RX_CALLBACK_ATTR __attribute__((fptrgroup("rtos_uart_rx_callback_fptr_grp")))
 
 /**
- * Typedef to the RTOS I2C slave driver instance struct.
+ * This attribute must be specified on all RTOS UART rx callback functions
+ * provided by the application to allow compiler stack calculation.
+ */
+#define RTOS_UART_RX_CALL_ATTR __attribute__((fptrgroup("rtos_uart_rx_call_fptr_grp")))
+
+/**
+ * Typedef to the RTOS UART rx driver instance struct.
  */
 typedef struct rtos_uart_rx_struct rtos_uart_rx_t;
 
 /**
- * Function pointer type for application provided RTOS I2C slave start callback functions.
+ * Function pointer type for application provided RTOS UART rx start callback functions.
  *
- * These callback functions are optionally called by an I2C slave driver's thread when it is first
+ * This callback function is optionally (may be NULL) called by an UART rx driver's thread when it is first
  * started. This gives the application a chance to perform startup initialization from within the
  * driver's thread.
  *
- * \param ctx           A pointer to the associated I2C slave driver instance.
+ * \param ctx           A pointer to the associated UART rx driver instance.
  * \param app_data      A pointer to application specific data provided
  *                      by the application. Used to share data between
  *                      this callback function and the application.
  */
 
-typedef void (*rtos_uart_rx_start_cb_t)(rtos_uart_rx_t *ctx, void *app_data);
-typedef void (*rtos_uart_rx_complete_cb_t)(rtos_uart_rx_t *ctx, void *app_data);
-typedef void (*rtos_uart_rx_error_t)(rtos_uart_rx_t *ctx, void *app_data);
-
-
-// /**
-//  * Function pointer type for application provided RTOS I2C slave receive callback functions.
-//  *
-//  * These callback functions are called when an I2C slave driver instance has received data from
-//  * a master device.
-//  *
-//  * \param ctx           A pointer to the associated I2C slave driver instance.
-//  * \param app_data      A pointer to application specific data provided
-//  *                      by the application. Used to share data between
-//  *                      this callback function and the application.
-//  * \param data          A pointer to the data received from the master.
-//  * \param len           The number of valid bytes in \p data.
-//  */
-// typedef void (*rtos_i2c_slave_rx_cb_t)(rtos_i2c_slave_t *ctx, void *app_data, uint8_t *data, size_t len);
-
-// *
-//  * Function pointer type for application provided RTOS I2C slave transmit start callback functions.
-//  *
-//  * These callback functions are called when an I2C slave driver instance needs to transmit data to
-//  * a master device. This callback must provide the data to transmit and the length.
-//  *
-//  * \param ctx           A pointer to the associated I2C slave driver instance.
-//  * \param app_data      A pointer to application specific data provided
-//  *                      by the application. Used to share data between
-//  *                      this callback function and the application.
-//  * \param data          A pointer to the data buffer to transmit to the master. The driver sets this
-//  *                      to its internal data buffer, which has a size of RTOS_I2C_SLAVE_BUF_LEN, prior
-//  *                      to calling this callback. This may be set to a different buffer by the callback.
-//  *                      The callback must fill this buffer with the data to send to the master.
-//  *
-//  * \return              The number of bytes to transmit to the master from \p data. If the master
-//  *                      reads more bytes than this, the driver will wrap around to the start of the
-//  *                      buffer and send it again.
- 
-// typedef size_t (*rtos_i2c_slave_tx_start_cb_t)(rtos_i2c_slave_t *ctx, void *app_data, uint8_t **data);
-
-// /**
-//  * Function pointer type for application provided RTOS I2C slave transmit done callback functions.
-//  *
-//  * These callback functions are optionally called when an I2C slave driver instance is done transmitting data to
-//  * a master device. A buffer to the data sent and the actual number of bytes sent are provided to the callback.
-//  *
-//  * The application may want to use this, for example, if the buffer that was sent was malloc'd. This callback
-//  * can be used to free the buffer.
-//  *
-//  * \param ctx           A pointer to the associated I2C slave driver instance.
-//  * \param app_data      A pointer to application specific data provided
-//  *                      by the application. Used to share data between
-//  *                      this callback function and the application.
-//  * \param data          A pointer to the data transmitted to the master.
-//  * \param len           The number of bytes transmitted to the master from \p data.
-//  */
-// typedef void (*rtos_i2c_slave_tx_done_cb_t)(rtos_i2c_slave_t *ctx, void *app_data, uint8_t *data, size_t len);
+typedef void (*rtos_uart_rx_started_cb_t)(rtos_uart_rx_t *ctx, void *app_data);
 
 /**
- * Struct representing an RTOS I2C slave driver instance.
+ * Function pointer type for application provided RTOS UART rx receive callback function.
+ *
+ * This callback functions are called when an UART rx driver instance has received data to a specified
+ * depth.
+ *
+ * \param ctx           A pointer to the associated UART rx driver instance.
+ * \param app_data      A pointer to application specific data provided
+ *                      by the application. Used to share data between
+ *                      this callback function and the application.
+ */
+typedef void (*rtos_uart_rx_complete_cb_t)(rtos_uart_rx_t *ctx, void *app_data);
+
+
+
+/**
+ * Function pointer type for application provided RTOS UART rx error callback functions.
+ *
+ * This callback function is optionally (may be NULL_ called when an UART rx driver instance experiences an error 
+ * in reception. These error types are defined in uart.h of the underlying HIL driver but can be of the following
+ * types for the RTOS rx:  UART_START_BIT_ERROR, UART_PARITY_ERROR, UART_FRAMING_ERROR, UART_OVERRUN_ERROR.
+ * 
+ *
+ * \param ctx           A pointer to the associated UART rx driver instance.
+ * \param app_data      A pointer to application specific data provided
+ *                      by the application. Used to share data between
+ *                      this callback function and the application.
+ * \param err_type      A pointer to the data transmitted to the master.
+ */
+typedef void (*rtos_uart_rx_error_t)(rtos_uart_rx_t *ctx, void *app_data);
+
+/**
+ * Struct representing an RTOS UART rx driver instance.
  *
  * The members in this struct should not be accessed directly.
  */
-// struct rtos_i2c_slave_struct {
-//     port_t p_scl;
-//     port_t p_sda;
-//     uint8_t device_addr;
-
-//     void *app_data;
-//     uint8_t data_buf[RTOS_I2C_SLAVE_BUF_LEN];
-//     size_t rx_data_i;
-
-//     uint8_t *tx_data;
-//     size_t tx_data_len;
-//     size_t tx_data_i;
-//     size_t tx_data_sent;
-
-//     int waiting_for_complete_cb;
-
-//     RTOS_I2C_SLAVE_CALLBACK_ATTR rtos_i2c_slave_start_cb_t start;
-//     RTOS_I2C_SLAVE_CALLBACK_ATTR rtos_i2c_slave_rx_cb_t rx;
-//     RTOS_I2C_SLAVE_CALLBACK_ATTR rtos_i2c_slave_tx_start_cb_t tx_start;
-//     RTOS_I2C_SLAVE_CALLBACK_ATTR rtos_i2c_slave_tx_done_cb_t tx_done;
-
-//     streaming_channel_t c;
-//     rtos_osal_event_group_t events;
-//     rtos_osal_thread_t hil_thread;
-//     rtos_osal_thread_t app_thread;
-// };
-
 
 
 struct rtos_uart_rx_struct {
-    uart_rx_t ctx;
+    uart_rx_t dev;
 
-    __attribute__((fptrgroup("rtos_uart_rx_fptr_grp")))
-    void (*read)(rtos_uart_rx_t *, uint8_t buf[], size_t *num_bytes);
+    RTOS_UART_RX_CALL_ATTR void (*read)(rtos_uart_rx_t *, uint8_t buf[], size_t *num_bytes);
 
     void *app_data;
 
-    RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_start_cb_t rx_start_cb;
+    RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_started_cb_t rx_start_cb;
     RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_complete_cb_t rx_complete_cb;
     RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_error_t rx_error_cb;
 
@@ -168,9 +119,9 @@ struct rtos_uart_rx_struct {
 /**
  * Initializes an RTOS UART slave driver instance.
  * This must only be called by the tile that owns the driver instance. It should be
- * called before starting the RTOS, and must be called before calling rtos_i2c_slave_start().
+ * called before starting the RTOS, and must be called before calling rtos_uart_rx_start().
  *
- * \param i2c_slave_ctx A pointer to the I2C slave driver instance to initialize.
+ * \param uart_rx_ctx A pointer to the UART rx driver instance to initialize.
  * \param io_core_mask  A bitmask representing the cores on which the low level I2C I/O thread
  *                      created by the driver is allowed to run. Bit 0 is core 0, bit 1 is core 1,
  *                      etc.
@@ -193,12 +144,12 @@ void rtos_uart_rx_init(
         hwtimer_t tmr);
 
 /**
- * Starts an RTOS I2C slave driver instance. This must only be called by the tile that
+ * Starts an RTOS UART rx driver instance. This must only be called by the tile that
  * owns the driver instance. It must be called after starting the RTOS from an RTOS thread.
  *
- * rtos_i2c_slave_init() must be called on this I2C slave driver instance prior to calling this.
+ * rtos_uart_rx_init() must be called on this UART rx driver instance prior to calling this.
  *
- * \param i2c_slave_ctx     A pointer to the I2C slave driver instance to start.
+ * \param uart_rx_ctx       A pointer to the UART rx driver instance to start.
  * \param app_data          A pointer to application specific data to pass to
  *                          the callback functions.
  * \param start             The callback function that is called when the driver's
@@ -214,7 +165,7 @@ void rtos_uart_rx_init(
 void rtos_uart_rx_start(
         rtos_uart_rx_t *uart_rx_ctx,
         void *app_data,
-        rtos_uart_rx_start_cb_t start,
+        rtos_uart_rx_started_cb_t start,
         rtos_uart_rx_complete_cb_t rx_complete,
         rtos_uart_rx_error_t error,
         unsigned interrupt_core_id,

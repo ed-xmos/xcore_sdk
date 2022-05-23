@@ -215,7 +215,7 @@ void uart_tx(uart_tx_t *uart_cfg, uint8_t data){
             sleep_until_next_transition(uart_cfg);//Set event for now
             triggerable_enable_trigger(uart_cfg->tmr);
         } else {//Transaction already underway
-            uart_buffer_error_t err = push_byte_into_buffer(&uart_cfg->buffer, data);
+            push_byte_into_buffer(&uart_cfg->buffer, data);
         }
     } else {
         uart_cfg->uart_data = data;

@@ -17,31 +17,6 @@
 #include "app_conf.h"
 #include "individual_tests/uart/uart_test.h"
 
-// #if ON_TILE(1)
-// RTOS_SPI_SLAVE_CALLBACK_ATTR
-// static void spi_slave_start(rtos_spi_slave_t *ctx, void *app_data)
-// {
-//     (void) ctx;
-//     (void) app_data;
-//     spi_printf("SLAVE start");
-// }
-
-// RTOS_SPI_SLAVE_CALLBACK_ATTR
-// static void spi_slave_xfer_done(rtos_spi_slave_t *ctx, void *app_data)
-// {
-//     spi_test_ctx_t *test_ctx = (spi_test_ctx_t*)ctx->app_data;
-//     spi_printf("SLAVE xfer done");
-//     if (test_ctx->slave_xfer_done[test_ctx->cur_test] != NULL)
-//     {
-//         SPI_SLAVE_XFER_DONE_ATTR spi_slave_xfer_done_t fn;
-//         fn = test_ctx->slave_xfer_done[test_ctx->cur_test];
-//         fn(ctx, app_data);
-//     } else {
-//         spi_printf("SLAVE missing slave_xfer_done callback on test %d", test_ctx->cur_test);
-//     }
-// }
-// #endif /* ON_TILE(1) */
-
 
 RTOS_UART_RX_CALLBACK_ATTR
 void uart_rx_start_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
@@ -65,7 +40,7 @@ static int run_uart_tests(uart_test_ctx_t *test_ctx)
     do
     {
         uint8_t tx_buff[] = {0xed, 0x00, 0x77, 0xed, 0x00, 0x77, 0xed, 0x00, 0x55, 0x55, 0x55, 0x55};
-        rtos_uart_tx(test_ctx->rtos_uart_tx_ctx, tx_buff, sizeof(tx_buff));
+        rtos_uart_tx_write(test_ctx->rtos_uart_tx_ctx, tx_buff, sizeof(tx_buff));
     
         uint8_t rx_buff[sizeof(tx_buff)] = {0};
         size_t num_rx = xStreamBufferReceive(   test_ctx->rtos_uart_rx_ctx->byte_buffer,
