@@ -32,7 +32,8 @@ void uart_tx_init(
         hwtimer_t tmr,
         uint8_t *buffer,
         size_t buffer_size,
-        void(*uart_callback_fptr)(uart_callback_t callback_info)
+        void(*uart_callback_fptr)(uart_callback_t callback_info, void* app_data),
+        void *app_data
         ){
 
     uart_cfg->tx_port = tx_port;
@@ -62,6 +63,7 @@ void uart_tx_init(
     if(buffer_used(&uart_cfg->buffer)){
         //Setup interrupt
         uart_cfg->uart_callback_fptr = uart_callback_fptr;
+        uart_cfg->app_data = app_data;
         triggerable_setup_interrupt_callback(tmr, uart_cfg, INTERRUPT_CALLBACK(uart_tx_handle_event) );
         interrupt_unmask_all();
     }
@@ -184,7 +186,7 @@ DEFINE_INTERRUPT_CALLBACK(UART_TX_INTERRUPTABLE_FUNCTIONS, uart_tx_handle_event,
             buffered_uart_tx_char_finished(uart_cfg);
             if(uart_cfg->state == UART_IDLE){
                 triggerable_disable_trigger(uart_cfg->tmr);
-                (*uart_cfg->uart_callback_fptr)(UART_TX_EMPTY);
+                (*uart_cfg->uart_callback_fptr)(UART_TX_EMPTY, *uart_cfg->app_data);
             }
             break;
         }

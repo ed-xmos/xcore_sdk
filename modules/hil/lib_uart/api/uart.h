@@ -58,7 +58,8 @@ typedef enum {
  * This attribute must be specified on all SPI callback functions
  * provided by the application.
  */
-#define UART_CALLBACK_ATTR __attribute__((fptrgroup("uart_callback")))
+#define HIL_UART_TX_CALLBACK_ATTR __attribute__((fptrgroup("hil_uart_tx_callback")))
+#define HIL_UART_RX_CALLBACK_ATTR __attribute__((fptrgroup("hil_uart_rx_callback")))
 
 
 /**
@@ -77,7 +78,8 @@ typedef struct {
     uint8_t uart_data;
     uint8_t stop_bits;
     uint8_t current_stop_bit;
-    UART_CALLBACK_ATTR void(*uart_callback_fptr)(uart_callback_t callback_info);
+    HIL_UART_TX_CALLBACK_ATTR void(*uart_tx_callback_fptr)(uart_callback_t callback_info);
+    void *app_data;
     hwtimer_t tmr;
     uart_buffer_t buffer;
 } uart_tx_t;
@@ -94,7 +96,8 @@ typedef struct {
     uint8_t uart_data;
     uint8_t stop_bits;
     uint8_t current_stop_bit;
-    UART_CALLBACK_ATTR void(*uart_callback_fptr)(uart_callback_t callback_info);
+    HIL_UART_RX_CALLBACK_ATTR void(*uart_rx_callback_arg)(uart_callback_t callback_info);
+    void *app_data;
     hwtimer_t tmr;
     uart_buffer_t buffer;
 } uart_rx_t;
@@ -120,7 +123,8 @@ void uart_tx_init(
         hwtimer_t tmr,
         uint8_t *tx_buff,
         size_t buffer_size,
-        void(*uart_callback_fptr)(uart_callback_t callback_info)
+        void(*uart_callback_fptr)(uart_callback_t callback_info),
+        void *app_data
         );
 
 
@@ -158,36 +162,6 @@ void uart_tx(
         uart_tx_t *uart,
         uint8_t data);
 
-/**
- * Enforces a minimum delay between the time this is called and
- * the next transfer. It must be called during a transaction.
- * It returns immediately.
- *
- * \param dev         The active SPI device.
- * \param delay_ticks The number of reference clock ticks to delay.
- */
-// inline void spi_master_delay_before_next_transfer(
-//         spi_master_device_t *dev,
-//         uint32_t delay_ticks)
-// {
-//     spi_master_t *spi = dev->spi_master_ctx;
-
-//     spi->delay_before_transfer = 1;
-
-//     port_clear_trigger_time(spi->cs_port);
-
-//     /* Assert CS now */
-//     port_out(spi->cs_port, dev->cs_assert_val);
-//     port_sync(spi->cs_port);
-
-//     /*
-//      * Assert CS again, scheduled for earliest time the
-//      * next transfer is allowed to start.
-//      */
-//     if (delay_ticks >= SPI_MASTER_MINIMUM_DELAY) {
-//         port_out_at_time(spi->cs_port, port_get_trigger_time(spi->cs_port) + delay_ticks, dev->cs_assert_val);
-//     }
-// }
 
 /**
  * De-initializes the specified SPI master interface. This disables the
@@ -209,7 +183,8 @@ void uart_rx_blocking_init(
         uint8_t stop_bits,
 
         hwtimer_t tmr,
-        void(*uart_callback_fptr)(uart_callback_t callback_info)
+        void(*uart_callback_fptr)(uart_callback_t callback_info),
+        void *app_data
         );
 
 
@@ -225,7 +200,9 @@ void uart_rx_init(
         hwtimer_t tmr,
         uint8_t *rx_buff,
         size_t buffer_size,
-        void(*uart_callback_fptr)(uart_callback_t callback_info)
+        void(*uart_callback_fptr)(uart_callback_t callback_info),
+        void *app_data
+
         );
 
 uint8_t uart_rx(uart_rx_t *uart);
@@ -234,26 +211,7 @@ void uart_rx_deinit(uart_rx_t *uart);
 
 
 
-/**
- * Callback group representing callback events that can occur during the
- * operation of the SPI slave task. Must be initialized by the application
- * prior to passing it to one of the SPI slaves.
- */
-#if 0
-typedef struct {
-    /** Pointer to the application's slave_transaction_started_t function to be called by the SPI device */
-    SPI_CALLBACK_ATTR slave_transaction_started_t slave_transaction_started;
 
-    /** Pointer to the application's slave_transaction_ended_t function to be called by the SPI device
-     *  Note: The time spent in this callback must be less than the minimum CS deassertion to reassertion
-     *  time.  If this is violated the first word of the proceeding transaction will be lost.
-     */
-    SPI_CALLBACK_ATTR slave_transaction_ended_t slave_transaction_ended;
-
-    /** Pointer to application specific data which is passed to each callback. */
-    void *app_data;
-} spi_slave_callback_group_t;
-#endif
 
 
 /**@}*/ // END: addtogroup hil_spi_slave
