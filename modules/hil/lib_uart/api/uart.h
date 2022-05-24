@@ -36,14 +36,14 @@ typedef enum uart_parity_t {
  * Enum type representing the callback error codes.
  *
  */
+#define UART_START_BIT_ERROR_VAL 2
 typedef enum {
-    UART_RX_COMPLETE = 0x00,
-    UART_TX_EMPTY,
-    UART_START_BIT_ERROR,
-    UART_PARITY_ERROR,
-    UART_FRAMING_ERROR,
-    UART_OVERRUN_ERROR,
-    UART_UNDERRUN_ERROR,
+    UART_RX_COMPLETE        = 0,
+    UART_UNDERRUN_ERROR     = 1,  //Buffered Tx Error only (buffer empty)
+    UART_START_BIT_ERROR    = UART_START_BIT_ERROR_VAL,     //Rx Only
+    UART_PARITY_ERROR       = UART_START_BIT_ERROR_VAL + 1, //Rx Only
+    UART_FRAMING_ERROR      = UART_START_BIT_ERROR_VAL + 2, //Rx Only
+    UART_OVERRUN_ERROR      = UART_START_BIT_ERROR_VAL + 3, //Buffered Rx only
 } uart_callback_code_t;
 
 /**

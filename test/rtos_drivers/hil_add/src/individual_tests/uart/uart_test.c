@@ -19,18 +19,37 @@
 
 
 RTOS_UART_RX_CALLBACK_ATTR
-void uart_rx_start_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
+void rtos_uart_rx_started(rtos_uart_rx_t *ctx){
+    uart_printf("rtos_uart_rx_started_cb_t\n");
+}
 
+
+RTOS_UART_RX_CALLBACK_ATTR
+void rtos_uart_rx_error(rtos_uart_rx_t *ctx, uint8_t err_flags){
+    uart_callback_code_t cb_code = ctx->dev.cb_code;
+    if(cb_code & START_BIT_ERR_CB_FLAG){
+        uart_printf("UART_START_BIT_ERROR\n");
+    }
+    if(cb_code & PARITY_ERR_CB_FLAG){
+        uart_printf("UART_PARITY_ERROR\n");
+    }
+    if(cb_code & FRAMING_ERR_CB_FLAG){
+        uart_printf("UART_FRAMING_ERROR\n");
+    }
+    if(cb_code & OVERRUN_ERR_CB_FLAG){
+        uart_printf("OVERRUN_ERR_CB_CODE\n");
+    }
+    
+
+    if(cb_code & ~ RX_ERROR_FLAGS){
+        uart_printf("UNKNOWN ERROR FLAG SET: 0x%x\n", cb_code);
+    }
 }
 
 RTOS_UART_RX_CALLBACK_ATTR
-void uart_rx_complete_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
-
-}
-
-RTOS_UART_RX_CALLBACK_ATTR
-void uart_rx_error_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
-
+void rtos_uart_rx_complete(rtos_uart_rx_t *ctx){
+    uart_printf("UART_RX_COMPLETE\n");
+   
 }
 
 static int run_uart_tests(uart_test_ctx_t *test_ctx)
@@ -43,17 +62,24 @@ static int run_uart_tests(uart_test_ctx_t *test_ctx)
         rtos_uart_tx_write(test_ctx->rtos_uart_tx_ctx, tx_buff, sizeof(tx_buff));
     
         uint8_t rx_buff[sizeof(tx_buff)] = {0};
-        size_t num_rx = xStreamBufferReceive(   test_ctx->rtos_uart_rx_ctx->byte_buffer,
+        size_t num_rx = xStreamBufferReceive(   test_ctx->rtos_uart_rx_ctx->app_byte_buffer,
                                                 rx_buff,
                                                 sizeof(tx_buff),
                                                 portMAX_DELAY);
         int length_same = (num_rx == sizeof(tx_buff));        
         int array_different = memcmp(tx_buff, rx_buff, sizeof(tx_buff));
         uart_printf("uart loopback result len: %s, contents: %s", array_different ? "FAIL" : "PASS", length_same ? "PASS" : "FAIL");
-
-        if (!length_same || array_different){
+        if(!length_same){
+            uart_printf("len expected: %d, actual: %d", sizeof(tx_buff), num_rx);
             retval = -1;
         }
+        if(array_different){
+            for(int i = 0; i < num_rx; i++){
+                uart_printf("Rx byte %d: 0x%x", i, rx_buff[i]);    
+            }
+            retval = -1;
+        }
+
     } while (++test_ctx->cur_test < test_ctx->test_cnt);
 
     return retval;
@@ -68,11 +94,13 @@ static void start_uart_devices(uart_test_ctx_t *test_ctx)
     rtos_uart_rx_start(
         test_ctx->rtos_uart_rx_ctx,
         app_data,
-        uart_rx_start_cb,
-        uart_rx_complete_cb,
-        uart_rx_error_cb,
+        rtos_uart_rx_started,
+        rtos_uart_rx_complete,
+        rtos_uart_rx_error,
         (1 << UART_RX_ISR_CORE),
-        appconfSTARTUP_TASK_PRIORITY);
+        appconfSTARTUP_TASK_PRIORITY,
+        160,
+        1);
 
     uart_printf("TX start");
     rtos_uart_tx_start(test_ctx->rtos_uart_tx_ctx);

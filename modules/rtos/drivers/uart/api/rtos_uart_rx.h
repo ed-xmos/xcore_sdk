@@ -17,13 +17,38 @@
 #include "rtos_osal.h"
 #include "stream_buffer.h"
 
+/**
+ * The callback code bit positions and flag masks available for RTOS UART Rx.
+ */
+#define COMPLETE_CB_CODE       0
+#define STARTED_CB_CODE        1
+#define START_BIT_ERR_CB_CODE  2
+#define PARITY_ERR_CB_CODE     3
+#define FRAMING_ERR_CB_CODE    4
+#define OVERRUN_ERR_CB_CODE    5
+
+#define COMPLETE_CB_FLAG        (1 << COMPLETE_CB_CODE)
+#define STARTED_CB_FLAG         (1 << STARTED_CB_CODE)
+#define START_BIT_ERR_CB_FLAG   (1 << START_BIT_ERR_CB_CODE)
+#define PARITY_ERR_CB_FLAG      (1 << PARITY_ERR_CB_CODE)
+#define FRAMING_ERR_CB_FLAG     (1 << FRAMING_ERR_CB_CODE)
+#define OVERRUN_ERR_CB_FLAG     (1 << OVERRUN_ERR_CB_CODE)
+
+#if (START_BIT_ERR_CB_CODE != UART_START_BIT_ERROR_VAL)
+#error Please align the HIL uart_callback_code_t with CB codes in rtos_uart_rx.c
+#endif
+
+#define RX_ALL_FLAGS (COMPLETE_CB_FLAG | STARTED_CB_FLAG | START_BIT_ERR_CB_FLAG | PARITY_ERR_CB_FLAG | FRAMING_ERR_CB_FLAG)
+#define RX_ERROR_FLAGS (START_BIT_ERR_CB_FLAG | PARITY_ERR_CB_FLAG | FRAMING_ERR_CB_FLAG)
+
 
 /**
  * The maximum number of bytes that a the RTOS UART rx driver can receive from a master
- * in a single write transaction before being read/emptied.
+ * in a single write transaction before being read/emptied. This is not the same as 
+ * app_byte_buffer_size which can be any size.
  */
 #ifndef RTOS_UART_RX_BUF_LEN
-#define RTOS_UART_RX_BUF_LEN 16
+#define RTOS_UART_RX_BUF_LEN 8
 #endif
 
 /**
@@ -51,25 +76,19 @@ typedef struct rtos_uart_rx_struct rtos_uart_rx_t;
  * driver's thread.
  *
  * \param ctx           A pointer to the associated UART rx driver instance.
- * \param app_data      A pointer to application specific data provided
- *                      by the application. Used to share data between
- *                      this callback function and the application.
  */
 
-typedef void (*rtos_uart_rx_started_cb_t)(rtos_uart_rx_t *ctx, void *app_data);
+typedef void (*rtos_uart_rx_started_cb_t)(rtos_uart_rx_t *ctx);
 
 /**
  * Function pointer type for application provided RTOS UART rx receive callback function.
  *
  * This callback functions are called when an UART rx driver instance has received data to a specified
- * depth.
+ * depth. Please use the xStreamBufferReceive(rtos_uart_rx_ctx->isr_byte_buffer, ... to read the bytes.
  *
  * \param ctx           A pointer to the associated UART rx driver instance.
- * \param app_data      A pointer to application specific data provided
- *                      by the application. Used to share data between
- *                      this callback function and the application.
  */
-typedef void (*rtos_uart_rx_complete_cb_t)(rtos_uart_rx_t *ctx, void *app_data);
+typedef void (*rtos_uart_rx_complete_cb_t)(rtos_uart_rx_t *ctx);
 
 
 
@@ -82,12 +101,10 @@ typedef void (*rtos_uart_rx_complete_cb_t)(rtos_uart_rx_t *ctx, void *app_data);
  * 
  *
  * \param ctx           A pointer to the associated UART rx driver instance.
- * \param app_data      A pointer to application specific data provided
- *                      by the application. Used to share data between
- *                      this callback function and the application.
- * \param err_type      A pointer to the data transmitted to the master.
+ * \param err_flags     An 8b word containing error flags set during reception of last frame. 
+ *                      See rtos_uart_rx.h for the bit field definitions.
  */
-typedef void (*rtos_uart_rx_error_t)(rtos_uart_rx_t *ctx, void *app_data);
+typedef void (*rtos_uart_rx_error_t)(rtos_uart_rx_t *ctx, uint8_t err_flags);
 
 /**
  * Struct representing an RTOS UART rx driver instance.
@@ -109,8 +126,12 @@ struct rtos_uart_rx_struct {
 
     streaming_channel_t c;
 
-    StreamBufferHandle_t byte_buffer;
+    StreamBufferHandle_t isr_byte_buffer;
+    StreamBufferHandle_t app_byte_buffer;
+    size_t app_byte_buffer_size;
+    size_t app_byte_buffer_fill_trigger;
 
+    uint8_t cb_flags;
     rtos_osal_event_group_t events;
     rtos_osal_thread_t hil_thread;
     rtos_osal_thread_t app_thread;
@@ -141,7 +162,8 @@ void rtos_uart_rx_init(
         uint8_t data_bits,
         uart_parity_t parity,
         uint8_t stop_bits,
-        hwtimer_t tmr);
+        hwtimer_t tmr
+        );
 
 /**
  * Starts an RTOS UART rx driver instance. This must only be called by the tile that
@@ -169,7 +191,10 @@ void rtos_uart_rx_start(
         rtos_uart_rx_complete_cb_t rx_complete,
         rtos_uart_rx_error_t error,
         unsigned interrupt_core_id,
-        unsigned priority);
+        unsigned priority,
+
+        size_t app_byte_buffer_size,
+        size_t app_byte_buffer_fill_trigger);
 
 
 

@@ -12,85 +12,33 @@
 #include "task.h"
 
 
-#define COMPLETE_CB_CODE       0
-#define STARTED_CB_CODE        1
-#define ERROR_CB_CODE          2
-
-#define COMPLETE_CB_FLAG        (1 << COMPLETE_CB_CODE)
-#define STARTED_CB_FLAG         (1 << STARTED_CB_CODE)
-#define ERROR_CB_FLAG           (1 << ERROR_CB_CODE)
-
-#define ALL_FLAGS (COMPLETE_CB_FLAG | STARTED_CB_FLAG | ERROR_CB_FLAG)
-
-
 DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
 {
     rtos_uart_rx_t *ctx = (rtos_uart_rx_t*)arg;
-    int isr_action;
 
-    isr_action = s_chan_in_byte(ctx->c.end_b);
+    /* Grab byte received from rx which triggered ISR */
+    uint8_t byte = s_chan_in_byte(ctx->c.end_b);
+    uint8_t cb_flags = s_chan_in_byte(ctx->c.end_b);
 
-    rtos_osal_event_group_set_bits(&ctx->events, 1 << isr_action);
-    if(isr_action == COMPLETE_CB_CODE){
-        uint8_t byte = s_chan_in_byte(ctx->c.end_b);
-        BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
-        size_t xBytesSent = xStreamBufferSendFromISR(ctx->byte_buffer, &byte, 1, &pxHigherPriorityTaskWoken);
-        if(xBytesSent != 1){
-            rtos_printf("ISR push buff full\n");
-        }
-        // taskYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
-        //TODO is this available in xcore port?
+    /* Note only error flags are set so set complete flag too for */
+    cb_flags |= COMPLETE_CB_FLAG;
+        
+    BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
+    size_t xBytesSent = xStreamBufferSendFromISR(ctx->isr_byte_buffer, &byte, 1, &pxHigherPriorityTaskWoken);
+    if(xBytesSent != 1){
+        rtos_osal_event_group_set_bits(&ctx->events, OVERRUN_ERR_CB_FLAG);
     }
+    rtos_osal_event_group_set_bits(&ctx->events, cb_flags);
 
-    // swmem implementation example
-    //     if (rtos_swmem_read_request_isr) {
-    //     handled = rtos_swmem_read_request_isr(
-    //             (unsigned)(fill_slot - XS1_SWMEM_BASE + __swmem_address),
-    //             fill_buf);
-    //     if (handled) {
-    //         swmem_fill_populate_from_buffer(swmem_fill_res, fill_slot,
-    //                                         fill_buf);
-    //     }
-    // }
+    portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
 }
 
-RTOS_UART_RX_CALLBACK_ATTR
-void uart_rx_error_callback(void *app_data){
-    rtos_uart_rx_t *ctx = (rtos_uart_rx_t*)app_data;
+
+/* There is no rx_complete callback setup and so cb_flags == 0  means rx_complete no issues */
+static void uart_rx_error_callback(void * app_data){
+    rtos_uart_rx_t *ctx = (rtos_uart_rx_t*) app_data;
     uart_callback_code_t cb_code = ctx->dev.cb_code;
-    switch(cb_code){
-
-        case UART_START_BIT_ERROR:
-            rtos_printf("UART_START_BIT_ERROR\n");
-            break;
-        case UART_PARITY_ERROR:
-            rtos_printf("UART_PARITY_ERROR\n");
-            break;
-        case UART_FRAMING_ERROR:
-            rtos_printf("UART_FRAMING_ERROR\n");
-            break;
-        case UART_OVERRUN_ERROR:
-            rtos_printf("UART_OVERRUN_ERROR\n");
-            break;
-
-
-        // These should not be possible
-        case UART_UNDERRUN_ERROR:
-            rtos_printf("UART_UNDERRUN_ERROR\n");
-            break;
-        case UART_TX_EMPTY:
-            rtos_printf("UART_TX_EMPTY\n");
-            break;
-        case UART_RX_COMPLETE:
-            rtos_printf("UART_RX_COMPLETE\n");
-            break;
-    }
-}
-
-RTOS_UART_RX_CALLBACK_ATTR
-void uart_rx_complete_callback(void *app_data){
-    rtos_printf("UART_RX_COMPLETE\n");
-   
+    ctx->cb_flags |= 1 << cb_code; /* Or into flag bits. This is an optimisation based on START_BIT_ERR_CB_CODE == 2 */
 }
 
 static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
@@ -105,20 +53,19 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
         uint8_t byte = uart_rx(&ctx->dev);
         rtos_interrupt_unmask_all();
 
-        // Now store byte and make notification
-        s_chan_out_byte(ctx->c.end_a, COMPLETE_CB_CODE);
+        // Now store byte and send along with error flags. These will stay in synch.
         s_chan_out_byte(ctx->c.end_a, byte);
+        s_chan_out_byte(ctx->c.end_a, ctx->cb_flags);
+        ctx->cb_flags = 0;
     }
 }
 
-
-
 static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
 {
-    uint32_t flags = 0;
+    uint32_t error_flags = 0;
 
     if (ctx->rx_start_cb != NULL) {
-        ctx->rx_start_cb(ctx, ctx->app_data);
+        ctx->rx_start_cb(ctx);
     }
 
     // send token (synch with HIL logical core)
@@ -127,22 +74,43 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
     for (;;) {
         rtos_osal_event_group_get_bits(
                 &ctx->events,
-                ALL_FLAGS,
+                RX_ALL_FLAGS,
                 RTOS_OSAL_OR_CLEAR,
-                &flags,
+                &error_flags,
                 RTOS_OSAL_WAIT_FOREVER);
 
-        if (flags & COMPLETE_CB_FLAG) {
-            // rtos_printf("COMPLETE_CB_FLAG!!\n");
+        uint8_t byte = 0;
+        xStreamBufferReceive(   ctx->isr_byte_buffer,
+                                &byte,
+                                1,
+                                portMAX_DELAY); /* This will not block ever */
 
-        } else {
-            rtos_printf("Other OSAL event: 0x%x\n", flags);
+        BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
+        size_t xBytesSent = xStreamBufferSendFromISR(ctx->app_byte_buffer, &byte, 1, &pxHigherPriorityTaskWoken);
+        if(xBytesSent != 1){
+            error_flags |= OVERRUN_ERR_CB_FLAG;
         }
-        //.....other callbacks here TODO
+
+        if ((error_flags & RX_ERROR_FLAGS) && ctx->rx_error_cb) {
+            (*ctx->rx_error_cb)(ctx, error_flags & RX_ERROR_FLAGS);
+        }
+
+        if (ctx->rx_complete_cb) {
+            (*ctx->rx_complete_cb)(ctx);
+        }
+
+        // swmem implementation example
+        //     if (rtos_swmem_read_request_isr) {
+        //     handled = rtos_swmem_read_request_isr(
+        //             (unsigned)(fill_slot - XS1_SWMEM_BASE + __swmem_address),
+        //             fill_buf);
+        //     if (handled) {
+        //         swmem_fill_populate_from_buffer(swmem_fill_res, fill_slot,
+        //                                         fill_buf);
+        //     }
+        // }
     }
 }
-
-
 
 
 
@@ -169,9 +137,9 @@ void rtos_uart_rx_init(
         parity,
         stop_bits,
         tmr,
-        NULL,
+        NULL, // Unbuffered (blocking) version
         0,
-        uart_rx_complete_callback,
+        NULL, // Rx complete callback not needed
         uart_rx_error_callback,
         uart_rx_ctx
         );
@@ -198,17 +166,21 @@ void rtos_uart_rx_init(
 void rtos_uart_rx_start(
         rtos_uart_rx_t *uart_rx_ctx,
         void *app_data,
-        rtos_uart_rx_started_cb_t rx_start,
-        rtos_uart_rx_complete_cb_t rx_complete_cb,
-        rtos_uart_rx_error_t rx_error,
+        RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_started_cb_t rx_start,
+        RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_complete_cb_t rx_complete_cb,
+        RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_error_t rx_error,
         unsigned interrupt_core_id,
-        unsigned priority){
+        unsigned priority,
+        size_t app_byte_buffer_size,
+        size_t app_byte_buffer_fill_trigger){
     
     /* Init callbacks & args */
     uart_rx_ctx->app_data = app_data;
     uart_rx_ctx->rx_start_cb = rx_start;
     uart_rx_ctx->rx_complete_cb = rx_complete_cb;
     uart_rx_ctx->rx_error_cb = rx_error;
+
+    uart_rx_ctx->cb_flags = 0; /* Clear all cb code bits */
 
 
     // void (*read)(rtos_uart_rx_t *, uint8_t buf[], size_t *num_bytes);
@@ -227,7 +199,9 @@ void rtos_uart_rx_start(
     rtos_osal_thread_core_exclusion_set(NULL, core_exclude_map);
 
     /* Setup buffer between ISR and receiving thread and set to trigger on single byte */
-    uart_rx_ctx->byte_buffer = xStreamBufferCreate(RTOS_UART_RX_BUF_LEN, 1);
+    uart_rx_ctx->isr_byte_buffer = xStreamBufferCreate(RTOS_UART_RX_BUF_LEN, 1);
+    /* Setup buffer between uart_app_thread and app  */
+    uart_rx_ctx->app_byte_buffer = xStreamBufferCreate(app_byte_buffer_size, app_byte_buffer_fill_trigger);
 
     rtos_osal_thread_create(
             &uart_rx_ctx->app_thread,
@@ -237,4 +211,7 @@ void rtos_uart_rx_start(
             RTOS_THREAD_STACK_SIZE(uart_rx_app_thread),
             priority);
 
+    if(rx_complete_cb != NULL){
+        (*rx_complete_cb)(uart_rx_ctx);
+    }
 }
