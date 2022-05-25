@@ -172,26 +172,31 @@ void rtos_uart_rx_start(
 
     uart_rx_ctx->cb_flags = 0; /* Clear all cb code bits */
 
-
-    // void (*read)(rtos_uart_rx_t *, uint8_t buf[], size_t *num_bytes);
-
-
     rtos_osal_event_group_create(&uart_rx_ctx->events, "uart_rx_events");
+
+    rtos_printf("HERE\n");
+
 
     /* Ensure that the UART interrupt is enabled on the requested core */
     uint32_t core_exclude_map = 0;
     rtos_osal_thread_core_exclusion_get(NULL, &core_exclude_map);
+    rtos_printf("THERE\n");
+
     rtos_osal_thread_core_exclusion_set(NULL, ~(1 << interrupt_core_id));
+    rtos_printf("EVERYWHERE\n");
 
     triggerable_enable_trigger(uart_rx_ctx->c.end_b);
 
     /* Restore the core exclusion map for the calling thread */
     rtos_osal_thread_core_exclusion_set(NULL, core_exclude_map);
+    rtos_printf("HERE\n");
 
     /* Setup buffer between ISR and receiving thread and set to trigger on single byte */
     uart_rx_ctx->isr_byte_buffer = xStreamBufferCreate(RTOS_UART_RX_BUF_LEN, 1);
     /* Setup buffer between uart_app_thread and app  */
     uart_rx_ctx->app_byte_buffer = xStreamBufferCreate(app_byte_buffer_size, 1);
+
+    rtos_printf("THERE\n");
 
     rtos_osal_thread_create(
             &uart_rx_ctx->app_thread,
@@ -204,4 +209,6 @@ void rtos_uart_rx_start(
     if(rx_complete_cb != NULL){
         (*rx_complete_cb)(uart_rx_ctx);
     }
+    rtos_printf("HERE\n");
+
 }

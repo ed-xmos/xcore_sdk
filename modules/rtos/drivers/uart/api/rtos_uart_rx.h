@@ -152,7 +152,6 @@ struct rtos_uart_rx_struct {
 void rtos_uart_rx_init(
         rtos_uart_rx_t *uart_rx_ctx,
         uint32_t io_core_mask,
-       
         port_t rx_port,
         uint32_t baud_rate,
         uint8_t data_bits,

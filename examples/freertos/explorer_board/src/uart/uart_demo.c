@@ -27,8 +27,7 @@
 
 void uart_tx_demo(void)
 {
-    rtos_printf("uart_demo\n");
-
+    rtos_printf("uart_demo tx\n");
 
     rtos_uart_tx_start(uart_tx_ctx);
    
@@ -73,6 +72,8 @@ void uart_rx_error_cb(rtos_uart_rx_t *ctx, uint8_t err_flags){
 }
 
 void uart_rx_demo(void){
+    rtos_printf("uart_demo rx\n");
+
     void *app_data = NULL;
 
     rtos_uart_rx_start(
@@ -84,6 +85,9 @@ void uart_rx_demo(void){
             (1 << appconfUART_RX_INTERRUPT_CORE),
             appconfUART_RX_TASK_PRIORITY,
             16);
+
+    rtos_printf("uart_demo rx STARTED\n");
+
 
     for (;;) {
         uint8_t rx_byte = 0;
