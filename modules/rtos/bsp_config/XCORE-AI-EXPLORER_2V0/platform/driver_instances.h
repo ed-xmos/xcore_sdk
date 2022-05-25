@@ -18,7 +18,7 @@
 #define I2C_TILE_NO        0
 #define MICARRAY_TILE_NO   1
 #define I2S_TILE_NO        1
-#define UART_TILE_NO       0
+#define UART_TILE_NO       1
 
 /** TILE 0 Clock Blocks */
 #define FLASH_CLKBLK  XS1_CLKBLK_1

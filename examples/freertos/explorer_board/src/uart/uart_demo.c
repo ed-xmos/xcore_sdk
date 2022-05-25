@@ -23,53 +23,53 @@
 #include "rtos_uart_rx.h"
 
 
-port_t tx_port = WIFI_WUP_RST_N;
-port_t rx_port = WIFI_WIRQ;
+/* This example requires that you loopback the XXXXX pins */
 
 void uart_tx_demo(void)
 {
-    uint32_t status;
-    // TimerHandle_t volume_up_timer;
-
     rtos_printf("uart_demo\n");
 
-    rtos_uart_tx_t ctx;
-    hwtimer_t tmr = hwtimer_alloc();
 
-    rtos_uart_tx_init(
-            &ctx,
-            tx_port,
-            115200,
-            8,
-            UART_PARITY_NONE,
-            1,
-            tmr);
-
-    rtos_uart_tx_start(&ctx);
+    rtos_uart_tx_start(uart_tx_ctx);
    
     for (;;) {
-
-        xTaskNotifyWait(
-                0x00000000UL,    /* Don't clear notification bits on entry */
-                0xFFFFFFFFUL,    /* Reset full notification value on exit */
-                &status,         /* Pass out notification value into status */
-                100 ); /* Wait indefinitely until next notification */
-                // portMAX_DELAY ); /* Wait indefinitely until next notification */
-
         uint8_t tx_buff[] = {0x00, 0xff, 0xaa};
         rtos_printf("uart send...\n");
-        rtos_uart_tx(&ctx, tx_buff, sizeof(tx_buff));
+        rtos_uart_tx_write(uart_tx_ctx, tx_buff, sizeof(tx_buff));
+
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
-void uart_rx_start_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
-
+RTOS_UART_RX_CALLBACK_ATTR
+void uart_rx_start_cb(rtos_uart_rx_t *uart_rx_ctx){
+    rtos_printf("uart_rx_start_cb\n");
 }
-void uart_rx_complete_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
 
+RTOS_UART_RX_CALLBACK_ATTR
+void uart_rx_complete_cb(rtos_uart_rx_t *uart_rx_ctx){
+    //Do nothing
 }
-void uart_rx_error_cb(rtos_uart_rx_t *uart_rx_ctx, void *app_data){
 
+RTOS_UART_RX_CALLBACK_ATTR
+void uart_rx_error_cb(rtos_uart_rx_t *ctx, uint8_t err_flags){
+    uart_callback_code_t cb_code = ctx->dev.cb_code;
+    if(cb_code & START_BIT_ERR_CB_FLAG){
+        rtos_printf("UART_START_BIT_ERROR\n");
+    }
+    if(cb_code & PARITY_ERR_CB_FLAG){
+        rtos_printf("UART_PARITY_ERROR\n");
+    }
+    if(cb_code & FRAMING_ERR_CB_FLAG){
+        rtos_printf("UART_FRAMING_ERROR\n");
+    }
+    if(cb_code & OVERRUN_ERR_CB_FLAG){
+        rtos_printf("OVERRUN_ERR_CB_CODE\n");
+    }
+
+    if(cb_code & ~ RX_ERROR_FLAGS){
+        rtos_printf("UNKNOWN ERROR FLAG SET: 0x%x (THIS SHOULD NEVER HAPPEN)\n", cb_code);
+    }
 }
 
 void uart_rx_demo(void){
@@ -82,11 +82,12 @@ void uart_rx_demo(void){
             uart_rx_complete_cb,
             uart_rx_error_cb,
             (1 << appconfUART_RX_INTERRUPT_CORE),
-            appconfUART_RX_TASK_PRIORITY);
+            appconfUART_RX_TASK_PRIORITY,
+            16);
 
     for (;;) {
         uint8_t rx_byte = 0;
-        xStreamBufferReceive(   uart_rx_ctx->byte_buffer,
+        xStreamBufferReceive(   uart_rx_ctx->app_byte_buffer,
                                 &rx_byte,
                                 1,
                                 portMAX_DELAY);
@@ -113,21 +114,5 @@ void uart_demo_create(UBaseType_t priority)
                 NULL,
                 priority,
                 NULL);
-}
-
-
-void uart_rx_pre_os_startup_init(void){
-
-    hwtimer_t tmr = hwtimer_alloc();
-
-    rtos_uart_rx_init(
-            uart_rx_ctx,
-             (1 << appconfUART_RX_IO_CORE),
-            rx_port,
-            115200,
-            8,
-            UART_PARITY_NONE,
-            1,
-            tmr);
 }
 

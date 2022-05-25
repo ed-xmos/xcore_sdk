@@ -215,6 +215,37 @@ static void i2s_init(void)
 #endif
 }
 
+
+static void uart_init(void)
+{
+#if ON_TILE(UART_TILE_NO)
+    hwtimer_t tmr_rx = hwtimer_alloc();
+
+    rtos_uart_rx_init(
+            uart_rx_ctx,
+            (1 << appconfUART_RX_IO_CORE),
+            XS1_PORT_1P, /* Looped back to 1P on tile 1 */
+            115200,
+            8,
+            UART_PARITY_NONE,
+            1,
+            tmr_rx);
+
+
+    hwtimer_t tmr_tx = hwtimer_alloc();
+
+    rtos_uart_tx_init(
+            uart_tx_ctx,
+            XS1_PORT_32A,
+            115200,
+            8,
+            UART_PARITY_NONE,
+            1,
+            tmr_tx);
+#endif
+}
+
+
 void platform_init(chanend_t other_tile_c)
 {
     rtos_intertile_init(intertile_ctx, other_tile_c);
@@ -226,4 +257,5 @@ void platform_init(chanend_t other_tile_c)
     mics_init();
     i2s_init();
     i2c_init();
+    uart_init();
 }

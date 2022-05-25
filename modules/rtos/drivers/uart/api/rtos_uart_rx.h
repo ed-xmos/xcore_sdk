@@ -90,7 +90,6 @@ typedef void (*rtos_uart_rx_started_cb_t)(rtos_uart_rx_t *ctx);
 typedef void (*rtos_uart_rx_complete_cb_t)(rtos_uart_rx_t *ctx);
 
 
-
 /**
  * Function pointer type for application provided RTOS UART rx error callback functions.
  *
@@ -189,7 +188,6 @@ void rtos_uart_rx_start(
         rtos_uart_rx_error_t error,
         unsigned interrupt_core_id,
         unsigned priority,
-
         size_t app_byte_buffer_size);
 
 

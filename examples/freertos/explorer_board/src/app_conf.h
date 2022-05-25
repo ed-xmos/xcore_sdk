@@ -15,15 +15,14 @@
 /* I/O and interrupt cores for Tile 0 */
 #define appconfI2C_IO_CORE                      3 /* Must be kept off core 0 with the RTOS tick ISR */
 #define appconfI2C_INTERRUPT_CORE               0 /* Must be kept off I/O cores. */
-#define appconfUART_RX_IO_CORE                  4 /* Must be kept off core 0 with the RTOS tick ISR */
-#define appconfUART_RX_INTERRUPT_CORE           1 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
-
 
 /* I/O and interrupt cores for Tile 1 */
 #define appconfPDM_MIC_IO_CORE                  1 /* Must be kept off I/O cores. Must be kept off core 0 with the RTOS tick ISR */
 #define appconfI2S_IO_CORE                      2 /* Must be kept off core 0 with the RTOS tick ISR */
 #define appconfPDM_MIC_INTERRUPT_CORE           3 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
 #define appconfI2S_INTERRUPT_CORE               4 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
+#define appconfUART_RX_IO_CORE                  5 /* Must be kept off core 0 with the RTOS tick ISR */
+#define appconfUART_RX_INTERRUPT_CORE           6 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
 
 /* Audio Pipeline Configuration */
 #define appconfAUDIO_CLOCK_FREQUENCY            MIC_ARRAY_CONFIG_MCLK_FREQ

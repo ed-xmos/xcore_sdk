@@ -45,9 +45,6 @@ void startup_task(void *arg)
 
     /* Create the filesystem demol task */
     filesystem_demo_create(appconfFILESYSTEM_DEMO_TASK_PRIORITY);
-
-    /* Create uart demo tasks and reivers */
-    uart_demo_create(appconfFILESYSTEM_DEMO_TASK_PRIORITY);
 #endif
 
 #if ON_TILE(1)
@@ -56,6 +53,9 @@ void startup_task(void *arg)
 
     /* Create audio pipeline */
     example_pipeline_init(appconfAUDIO_PIPELINE_TASK_PRIORITY);
+
+    /* Create uart demo tasks and reivers */
+    uart_demo_create(appconfFILESYSTEM_DEMO_TASK_PRIORITY);
 #endif
 
 	for (;;) {
@@ -86,7 +86,6 @@ void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3) {
     (void)c2;
     (void)c3;
 
-    uart_rx_pre_os_startup_init();
     tile_common_init(c1);
 }
 #endif
