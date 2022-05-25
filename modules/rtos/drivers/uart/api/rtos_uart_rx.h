@@ -43,9 +43,8 @@
 
 
 /**
- * The maximum number of bytes that a the RTOS UART rx driver can receive from a master
- * in a single write transaction before being read/emptied. This is not the same as 
- * app_byte_buffer_size which can be any size.
+ * The size of buffer between the ISR and the appthread. This is not the same as 
+ * app_byte_buffer_size which can be of any size.
  */
 #ifndef RTOS_UART_RX_BUF_LEN
 #define RTOS_UART_RX_BUF_LEN 8

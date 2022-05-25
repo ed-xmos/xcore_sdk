@@ -11,6 +11,7 @@
 #include "rtos_uart_rx.h"
 #include "task.h"
 
+#include <print.h>
 
 DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
 {
@@ -26,9 +27,11 @@ DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
     BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
     size_t xBytesSent = xStreamBufferSendFromISR(ctx->isr_byte_buffer, &byte, 1, &pxHigherPriorityTaskWoken);
     if(xBytesSent != 1){
-        rtos_osal_event_group_set_bits(&ctx->events, OVERRUN_ERR_CB_FLAG);
+        cb_flags |= OVERRUN_ERR_CB_FLAG;
     }
     rtos_osal_event_group_set_bits(&ctx->events, cb_flags);
+
+    printchar('+');
 
     portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
 }
@@ -72,22 +75,25 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
     s_chan_out_byte(ctx->c.end_b, 0);
 
     for (;;) {
+        uint8_t bytes[RTOS_UART_RX_BUF_LEN];
+        size_t xBytesRead = xStreamBufferReceive(   ctx->isr_byte_buffer,
+                                                    bytes,
+                                                    RTOS_UART_RX_BUF_LEN,
+                                                    portMAX_DELAY);
+
+        /* This will not block ever because we set these immediately after stream buff push*/
         rtos_osal_event_group_get_bits(
                 &ctx->events,
                 RX_ALL_FLAGS,
                 RTOS_OSAL_OR_CLEAR,
                 &error_flags,
                 RTOS_OSAL_WAIT_FOREVER);
+    
+        size_t xBytesSent = xStreamBufferSend(ctx->app_byte_buffer, bytes, xBytesRead, 0);
+        printchar('-');printint(xBytesSent);
 
-        uint8_t byte = 0;
-        xStreamBufferReceive(   ctx->isr_byte_buffer,
-                                &byte,
-                                1,
-                                portMAX_DELAY); /* This will not block ever */
 
-        BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
-        size_t xBytesSent = xStreamBufferSendFromISR(ctx->app_byte_buffer, &byte, 1, &pxHigherPriorityTaskWoken);
-        if(xBytesSent != 1){
+        if(xBytesSent != xBytesRead){
             error_flags |= OVERRUN_ERR_CB_FLAG;
         }
 
