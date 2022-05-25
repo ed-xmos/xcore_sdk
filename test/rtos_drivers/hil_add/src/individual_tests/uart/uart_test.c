@@ -40,10 +40,9 @@ void rtos_uart_rx_error(rtos_uart_rx_t *ctx, uint8_t err_flags){
     if(cb_code & OVERRUN_ERR_CB_FLAG){
         uart_printf("OVERRUN_ERR_CB_CODE\n");
     }
-    
 
     if(cb_code & ~ RX_ERROR_FLAGS){
-        uart_printf("UNKNOWN ERROR FLAG SET: 0x%x\n", cb_code);
+        uart_printf("UNKNOWN ERROR FLAG SET: 0x%x (THIS SHOULD NEVER HAPPEN)\n", cb_code);
     }
 }
 
@@ -57,32 +56,32 @@ static int run_uart_tests(uart_test_ctx_t *test_ctx)
 {
     int retval = 0;
 
-    //TODO remove me
-    unsigned trig_level = 16;
-    BaseType_t trig_valid = xStreamBufferSetTriggerLevel(test_ctx->rtos_uart_rx_ctx->app_byte_buffer, 
-                                                        trig_level);
-    uart_printf("trig level %u valid: %s\n", trig_level, trig_valid == pdTRUE ? "TRUE" :  "FALSE");
-
     do
     {
         uint8_t tx_buff[] = {0xed, 0x00, 0x77, 0xed, 0x00, 0x77, 0xed, 0x00, 0x55, 0x55, 0x55, 0x55};
         rtos_uart_tx_write(test_ctx->rtos_uart_tx_ctx, tx_buff, sizeof(tx_buff));
     
-        vTaskDelay(pdMS_TO_TICKS(10)); //TODO remove me
+        //Tx will not return until the last stop bit has finished
 
         uint8_t rx_buff[sizeof(tx_buff)] = {0};
-        memset(rx_buff, 0x11, sizeof(tx_buff));
+        memset(rx_buff, 0x11, sizeof(rx_buff));
 
-        size_t num_rx = xStreamBufferReceive(test_ctx->rtos_uart_rx_ctx->app_byte_buffer,
-                                            rx_buff,
-                                            sizeof(tx_buff),
-                                            pdMS_TO_TICKS(10000));
+        size_t num_read_tot = 0;
+        size_t num_timeouts = 0;
+        while(num_read_tot < sizeof(rx_buff) && num_timeouts == 0){
+            size_t num_rx = xStreamBufferReceive(test_ctx->rtos_uart_rx_ctx->app_byte_buffer,
+                                                &rx_buff[num_read_tot],
+                                                sizeof(rx_buff),
+                                                pdMS_TO_TICKS(100));
+            num_read_tot += num_rx;
+            num_timeouts += (num_rx == 0);
+        }
 
-        int length_same = (num_rx == sizeof(tx_buff));        
+        int length_same = (num_read_tot == sizeof(tx_buff));        
         int array_different = memcmp(tx_buff, rx_buff, sizeof(tx_buff));
         uart_printf("uart loopback result len: %s, contents: %s", length_same ? "PASS" : "FAIL", array_different ? "FAIL" : "PASS");
         if(!length_same){
-            uart_printf("len expected: %d, actual: %d", sizeof(tx_buff), num_rx);
+            uart_printf("len expected: %d, actual: %d", sizeof(tx_buff), num_read_tot);
             retval = -1;
         }
         if(array_different){
@@ -110,8 +109,8 @@ static void start_uart_devices(uart_test_ctx_t *test_ctx)
         rtos_uart_rx_error,
         (1 << UART_RX_ISR_CORE),
         appconfSTARTUP_TASK_PRIORITY,
-        128, // Big enough to hold tx_buff[]
-        12);
+        128 // Big enough to hold tx_buff[]
+        );
 
     uart_printf("TX start");
     rtos_uart_tx_start(test_ctx->rtos_uart_tx_ctx);

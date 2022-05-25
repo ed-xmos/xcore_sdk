@@ -31,8 +31,6 @@ DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
     }
     rtos_osal_event_group_set_bits(&ctx->events, cb_flags);
 
-    printchar('+');
-
     portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
 }
 
@@ -71,7 +69,7 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
         ctx->rx_start_cb(ctx);
     }
 
-    // send token (synch with HIL logical core)
+    /* send token (synch with HIL logical core) */
     s_chan_out_byte(ctx->c.end_b, 0);
 
     for (;;) {
@@ -90,8 +88,6 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
                 RTOS_OSAL_WAIT_FOREVER);
     
         size_t xBytesSent = xStreamBufferSend(ctx->app_byte_buffer, bytes, xBytesRead, 0);
-        printchar('-');printint(xBytesSent);
-
 
         if(xBytesSent != xBytesRead){
             error_flags |= OVERRUN_ERR_CB_FLAG;
@@ -104,17 +100,6 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
         if (ctx->rx_complete_cb) {
             (*ctx->rx_complete_cb)(ctx);
         }
-
-        // swmem implementation example
-        //     if (rtos_swmem_read_request_isr) {
-        //     handled = rtos_swmem_read_request_isr(
-        //             (unsigned)(fill_slot - XS1_SWMEM_BASE + __swmem_address),
-        //             fill_buf);
-        //     if (handled) {
-        //         swmem_fill_populate_from_buffer(swmem_fill_res, fill_slot,
-        //                                         fill_buf);
-        //     }
-        // }
     }
 }
 
@@ -177,8 +162,7 @@ void rtos_uart_rx_start(
         RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_error_t rx_error,
         unsigned interrupt_core_id,
         unsigned priority,
-        size_t app_byte_buffer_size,
-        size_t app_byte_buffer_fill_trigger){
+        size_t app_byte_buffer_size){
     
     /* Init callbacks & args */
     uart_rx_ctx->app_data = app_data;
@@ -207,7 +191,7 @@ void rtos_uart_rx_start(
     /* Setup buffer between ISR and receiving thread and set to trigger on single byte */
     uart_rx_ctx->isr_byte_buffer = xStreamBufferCreate(RTOS_UART_RX_BUF_LEN, 1);
     /* Setup buffer between uart_app_thread and app  */
-    uart_rx_ctx->app_byte_buffer = xStreamBufferCreate(app_byte_buffer_size, app_byte_buffer_fill_trigger);
+    uart_rx_ctx->app_byte_buffer = xStreamBufferCreate(app_byte_buffer_size, 1);
 
     rtos_osal_thread_create(
             &uart_rx_ctx->app_thread,

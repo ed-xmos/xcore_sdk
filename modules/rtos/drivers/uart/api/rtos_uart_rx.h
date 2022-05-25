@@ -127,8 +127,6 @@ struct rtos_uart_rx_struct {
 
     StreamBufferHandle_t isr_byte_buffer;
     StreamBufferHandle_t app_byte_buffer;
-    size_t app_byte_buffer_size;
-    size_t app_byte_buffer_fill_trigger;
 
     uint8_t cb_flags;
     rtos_osal_event_group_t events;
@@ -192,8 +190,7 @@ void rtos_uart_rx_start(
         unsigned interrupt_core_id,
         unsigned priority,
 
-        size_t app_byte_buffer_size,
-        size_t app_byte_buffer_fill_trigger);
+        size_t app_byte_buffer_size);
 
 
 
