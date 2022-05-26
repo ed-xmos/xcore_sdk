@@ -221,11 +221,13 @@ static void uart_init(void)
 #if ON_TILE(UART_TILE_NO)
     hwtimer_t tmr_rx = hwtimer_alloc();
 
+    const unsigned baud_rate = 1000000;
+
     rtos_uart_rx_init(
             uart_rx_ctx,
             (1 << appconfUART_RX_IO_CORE),
             XS1_PORT_1P, /* Looped back to 1P on tile 1 */
-            115200,
+            baud_rate,
             8,
             UART_PARITY_NONE,
             1,
@@ -236,8 +238,8 @@ static void uart_init(void)
 
     rtos_uart_tx_init(
             uart_tx_ctx,
-            XS1_PORT_32A,
-            115200,
+            XS1_PORT_1E,
+            baud_rate,
             8,
             UART_PARITY_NONE,
             1,

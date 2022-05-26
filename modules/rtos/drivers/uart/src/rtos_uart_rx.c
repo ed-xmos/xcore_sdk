@@ -36,10 +36,11 @@ DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
 
 
 /* There is no rx_complete callback setup and so cb_flags == 0  means rx_complete no issues */
+HIL_UART_RX_CALLBACK_ATTR
 static void uart_rx_error_callback(void * app_data){
     rtos_uart_rx_t *ctx = (rtos_uart_rx_t*) app_data;
     uart_callback_code_t cb_code = ctx->dev.cb_code;
-    ctx->cb_flags |= 1 << cb_code; /* Or into flag bits. This is an optimisation based on START_BIT_ERR_CB_CODE == 2 */
+    ctx->cb_flags |= (1 << cb_code); /* Or into flag bits. This is an optimisation based on START_BIT_ERR_CB_CODE == 2 */
 }
 
 static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
@@ -64,9 +65,6 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
 static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
 {
     
-    // triggerable_setup_interrupt_callback(ctx->c.end_b, uart_rx_ctx, RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr));
-
-
     if (ctx->rx_start_cb != NULL) {
         ctx->rx_start_cb(ctx);
     }

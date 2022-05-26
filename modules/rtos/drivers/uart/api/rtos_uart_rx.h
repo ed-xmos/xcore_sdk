@@ -38,8 +38,8 @@
 #error Please align the HIL uart_callback_code_t with CB codes in rtos_uart_rx.c
 #endif
 
-#define RX_ALL_FLAGS (COMPLETE_CB_FLAG | STARTED_CB_FLAG | START_BIT_ERR_CB_FLAG | PARITY_ERR_CB_FLAG | FRAMING_ERR_CB_FLAG)
 #define RX_ERROR_FLAGS (START_BIT_ERR_CB_FLAG | PARITY_ERR_CB_FLAG | FRAMING_ERR_CB_FLAG)
+#define RX_ALL_FLAGS (COMPLETE_CB_FLAG | STARTED_CB_FLAG | RX_ERROR_FLAGS)
 
 
 /**
