@@ -82,7 +82,7 @@ void uart_rx_demo(void){
             uart_rx_start_cb,
             uart_rx_complete_cb,
             uart_rx_error_cb,
-            (1 << appconfUART_RX_INTERRUPT_CORE),
+            appconfUART_RX_INTERRUPT_CORE,
             appconfUART_RX_TASK_PRIORITY,
             16);
 

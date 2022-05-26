@@ -47,7 +47,7 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
     // consume token (synch with RTOS driver)
     (void) s_chan_in_byte(ctx->c.end_a);
 
-    rtos_printf("UART Rx HIL on tile %d core %d\n", THIS_XCORE_TILE, rtos_core_id_get());
+    // rtos_printf("UART Rx HIL on tile %d core %d\n", THIS_XCORE_TILE, rtos_core_id_get());
 
     for (;;) {
         rtos_interrupt_mask_all();
@@ -63,7 +63,9 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
 
 static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
 {
-    uint32_t error_flags = 0;
+    
+    // triggerable_setup_interrupt_callback(ctx->c.end_b, uart_rx_ctx, RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr));
+
 
     if (ctx->rx_start_cb != NULL) {
         ctx->rx_start_cb(ctx);
@@ -72,6 +74,7 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
     /* send token (synch with HIL logical core) */
     s_chan_out_byte(ctx->c.end_b, 0);
 
+    uint32_t error_flags = 0;
     for (;;) {
         uint8_t bytes[RTOS_UART_RX_BUF_LEN];
         size_t xBytesRead = xStreamBufferReceive(   ctx->isr_byte_buffer,
@@ -108,7 +111,6 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
 void rtos_uart_rx_init(
         rtos_uart_rx_t *uart_rx_ctx,
         uint32_t io_core_mask,
-
         port_t rx_port,
         uint32_t baud_rate,
         uint8_t data_bits,
@@ -128,7 +130,7 @@ void rtos_uart_rx_init(
         parity,
         stop_bits,
         tmr,
-        NULL, // Unbuffered (blocking) version
+        NULL, // Unbuffered (blocking) version with no ISR
         0,
         NULL, // Rx complete callback not needed
         uart_rx_error_callback,
@@ -138,8 +140,6 @@ void rtos_uart_rx_init(
 
     uart_rx_ctx->c = s_chan_alloc();
 
-    triggerable_setup_interrupt_callback(uart_rx_ctx->c.end_b, uart_rx_ctx, RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr));
-
     rtos_osal_thread_create(
             &uart_rx_ctx->hil_thread,
             "uart_rx_hil_thread",
@@ -148,7 +148,7 @@ void rtos_uart_rx_init(
             RTOS_THREAD_STACK_SIZE(uart_rx_hil_thread),
             RTOS_OSAL_HIGHEST_PRIORITY);
 
-    /* Ensure the UART thread is never preempted - effectively give whole logical core*/
+    /* Ensure the UART thread is never preempted - effectively give whole logical core */
     rtos_osal_thread_preemption_disable(&uart_rx_ctx->hil_thread);
     /* And ensure it only runs on one of the specified cores */
     rtos_osal_thread_core_exclusion_set(&uart_rx_ctx->hil_thread, ~io_core_mask);
@@ -174,29 +174,21 @@ void rtos_uart_rx_start(
 
     rtos_osal_event_group_create(&uart_rx_ctx->events, "uart_rx_events");
 
-    rtos_printf("HERE\n");
-
-
     /* Ensure that the UART interrupt is enabled on the requested core */
     uint32_t core_exclude_map = 0;
     rtos_osal_thread_core_exclusion_get(NULL, &core_exclude_map);
-    rtos_printf("THERE\n");
-
     rtos_osal_thread_core_exclusion_set(NULL, ~(1 << interrupt_core_id));
-    rtos_printf("EVERYWHERE\n");
 
+    triggerable_setup_interrupt_callback(uart_rx_ctx->c.end_b, uart_rx_ctx, RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr));
     triggerable_enable_trigger(uart_rx_ctx->c.end_b);
 
     /* Restore the core exclusion map for the calling thread */
     rtos_osal_thread_core_exclusion_set(NULL, core_exclude_map);
-    rtos_printf("HERE\n");
 
     /* Setup buffer between ISR and receiving thread and set to trigger on single byte */
     uart_rx_ctx->isr_byte_buffer = xStreamBufferCreate(RTOS_UART_RX_BUF_LEN, 1);
     /* Setup buffer between uart_app_thread and app  */
     uart_rx_ctx->app_byte_buffer = xStreamBufferCreate(app_byte_buffer_size, 1);
-
-    rtos_printf("THERE\n");
 
     rtos_osal_thread_create(
             &uart_rx_ctx->app_thread,
@@ -209,6 +201,4 @@ void rtos_uart_rx_start(
     if(rx_complete_cb != NULL){
         (*rx_complete_cb)(uart_rx_ctx);
     }
-    rtos_printf("HERE\n");
-
 }
