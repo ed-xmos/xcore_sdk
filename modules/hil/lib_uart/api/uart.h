@@ -239,7 +239,6 @@ void uart_rx_init(
         void(*uart_rx_complete_callback_fptr)(void *app_data),
         void(*uart_rx_error_callback_fptr)(void *app_data),
         void *app_data
-
         );
 
 
