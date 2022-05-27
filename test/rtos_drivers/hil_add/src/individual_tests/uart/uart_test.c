@@ -28,17 +28,17 @@ RTOS_UART_RX_CALLBACK_ATTR
 void rtos_uart_rx_error(rtos_uart_rx_t *ctx, uint8_t err_flags){
     uart_printf("rtos_uart_rx_error\n");
     uart_callback_code_t cb_code = ctx->dev.cb_code;
-    if(cb_code & START_BIT_ERR_CB_FLAG){
+    if(cb_code & UR_START_BIT_ERR_CB_FLAG){
         uart_printf("UART_START_BIT_ERROR\n");
     }
-    if(cb_code & PARITY_ERR_CB_FLAG){
+    if(cb_code & UR_PARITY_ERR_CB_FLAG){
         uart_printf("UART_PARITY_ERROR\n");
     }
-    if(cb_code & FRAMING_ERR_CB_FLAG){
+    if(cb_code & UR_FRAMING_ERR_CB_FLAG){
         uart_printf("UART_FRAMING_ERROR\n");
     }
-    if(cb_code & OVERRUN_ERR_CB_FLAG){
-        uart_printf("OVERRUN_ERR_CB_CODE\n");
+    if(cb_code & UR_OVERRUN_ERR_CB_FLAG){
+        uart_printf("UR_OVERRUN_ERR_CB_CODE\n");
     }
 
     if(cb_code & ~ RX_ERROR_FLAGS){

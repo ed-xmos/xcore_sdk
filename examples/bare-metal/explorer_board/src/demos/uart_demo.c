@@ -36,7 +36,7 @@ void uart_tx_demo(uart_tx_t* uart_tx_ctx)
     debug_printf("Starting tx ramp test @ %ubaud..\n", XS1_TIMER_HZ / uart_tx_ctx->bit_time_ticks);
 
     hwtimer_t tmr = hwtimer_alloc();
-    hwtimer_delay(tmr, XS1_TIMER_KHZ);
+    hwtimer_delay(tmr, XS1_TIMER_KHZ); // Wait for a millisecond
 
     while(1) {
         uart_tx(uart_tx_ctx, tx_data);

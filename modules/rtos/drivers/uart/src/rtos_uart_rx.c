@@ -22,12 +22,12 @@ DEFINE_RTOS_INTERRUPT_CALLBACK(rtos_uart_rx_isr, arg)
     uint8_t cb_flags = s_chan_in_byte(ctx->c.end_b);
 
     /* Note only error flags are set so set complete flag too for */
-    cb_flags |= COMPLETE_CB_FLAG;
+    cb_flags |= UR_COMPLETE_CB_FLAG;
         
     BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
     size_t xBytesSent = xStreamBufferSendFromISR(ctx->isr_byte_buffer, &byte, 1, &pxHigherPriorityTaskWoken);
     if(xBytesSent != 1){
-        cb_flags |= OVERRUN_ERR_CB_FLAG;
+        cb_flags |= UR_OVERRUN_ERR_CB_FLAG;
     }
     rtos_osal_event_group_set_bits(&ctx->events, cb_flags);
 
@@ -40,22 +40,20 @@ HIL_UART_RX_CALLBACK_ATTR
 static void uart_rx_error_callback(void * app_data){
     rtos_uart_rx_t *ctx = (rtos_uart_rx_t*) app_data;
     uart_callback_code_t cb_code = ctx->dev.cb_code;
-    ctx->cb_flags |= (1 << cb_code); /* Or into flag bits. This is an optimisation based on START_BIT_ERR_CB_CODE == 2 */
+    ctx->cb_flags |= (1 << cb_code); /* Or into flag bits. This is an optimisation based on UR_START_BIT_ERR_CB_CODE == 2 */
 }
 
 static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
 {
-    // consume token (synch with RTOS driver)
+    /* consume token (synch with RTOS driver) */
     (void) s_chan_in_byte(ctx->c.end_a);
-
-    // rtos_printf("UART Rx HIL on tile %d core %d\n", THIS_XCORE_TILE, rtos_core_id_get());
     
     /* We cannot afford for the RX to be block or any ISRs in between frames */
     rtos_interrupt_mask_all();
     for (;;) {
         uint8_t byte = uart_rx(&ctx->dev);
 
-        // Now store byte and send along with error flags. These will stay in synch.
+        /*  Now store byte and send along with error flags. These will stay in synch. */
         s_chan_out_byte(ctx->c.end_a, byte);
         s_chan_out_byte(ctx->c.end_a, ctx->cb_flags);
         ctx->cb_flags = 0;
@@ -91,7 +89,7 @@ static void uart_rx_app_thread(rtos_uart_rx_t *ctx)
         size_t xBytesSent = xStreamBufferSend(ctx->app_byte_buffer, bytes, xBytesRead, 0);
 
         if(xBytesSent != xBytesRead){
-            error_flags |= OVERRUN_ERR_CB_FLAG;
+            error_flags |= UR_OVERRUN_ERR_CB_FLAG;
         }
 
         if ((error_flags & RX_ERROR_FLAGS) && ctx->rx_error_cb) {
@@ -128,9 +126,9 @@ void rtos_uart_rx_init(
         parity,
         stop_bits,
         tmr,
-        NULL, // Unbuffered (blocking) version with no ISR
+        NULL, /* Unbuffered (blocking) version with no ISR */
         0,
-        NULL, // Rx complete callback not needed
+        NULL, /* Rx complete callback not needed */
         uart_rx_error_callback,
         uart_rx_ctx
         );
@@ -160,7 +158,7 @@ void rtos_uart_rx_start(
         RTOS_UART_RX_CALLBACK_ATTR rtos_uart_rx_error_t rx_error,
         unsigned interrupt_core_id,
         unsigned priority,
-        size_t app_byte_buffer_size){
+        size_t app_rx_buff_size){
     
     /* Init callbacks & args */
     uart_rx_ctx->app_data = app_data;
@@ -186,7 +184,7 @@ void rtos_uart_rx_start(
     /* Setup buffer between ISR and receiving thread and set to trigger on single byte */
     uart_rx_ctx->isr_byte_buffer = xStreamBufferCreate(RTOS_UART_RX_BUF_LEN, 1);
     /* Setup buffer between uart_app_thread and app  */
-    uart_rx_ctx->app_byte_buffer = xStreamBufferCreate(app_byte_buffer_size, 1);
+    uart_rx_ctx->app_byte_buffer = xStreamBufferCreate(app_rx_buff_size, 1);
 
     rtos_osal_thread_create(
             &uart_rx_ctx->app_thread,

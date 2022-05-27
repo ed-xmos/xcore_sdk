@@ -62,26 +62,18 @@ inline void rtos_uart_tx_write(
 }
 
 /**
- * Initializes an RTOS I2C master driver instance.
+ * Initialises an RTOS UART tx driver instance.
  * This must only be called by the tile that owns the driver instance. It may be
  * called either before or after starting the RTOS, but must be called before calling
- * rtos_i2c_master_start() or any of the core I2C master driver functions with this instance.
+ * rtos_uart_tx_start() or any of the core UART tx driver functions with this instance.
  *
- * \param i2c_master_ctx      A pointer to the I2C master driver instance to initialize.
- * \param p_scl               The port containing SCL. This may be either the same as
- *                            or different than \p p_sda.
- * \param scl_bit_position    The bit number of the SCL line on the port \p p_scl.
- * \param scl_other_bits_mask A value that is ORed into the port value driven to \p p_scl
- *                            both when SCL is high and low. The bit representing SCL (as
- *                            well as SDA if they share the same port) must be set to 0.
- * \param p_sda               The port containing SDA. This may be either the same as
- *                            or different than \p p_scl.
- * \param sda_bit_position    The bit number of the SDA line on the port \p p_sda.
- * \param sda_other_bits_mask A value that is ORed into the port value driven to \p p_sda
- *                            both when SDA is high and low. The bit representing SDA (as
- *                            well as SCL if they share the same port) must be set to 0.
- * \param tmr                 This is unused and should be set to 0. This will be removed.
- * \param kbits_per_second    The speed of the I2C bus. The maximum value allowed is 400.
+ * \param ctx           A pointer to the UART tx driver instance to initialise.
+ * \param tx_port       The port containing the transmit pin
+ * \param baud_rate     The baud rate of the UART in bits per second.
+ * \param data_bits     The number of data bits per frame sent.
+ * \param parity        The type of parity used. See uart_parity_t above.
+ * \param stop_bits     The number of stop bits asserted at the of the frame. 
+ * \param tmr           The resource id of the timer to be used by the UART tx. 
  */
 void rtos_uart_tx_init(
         rtos_uart_tx_t *ctx,
@@ -108,4 +100,4 @@ void rtos_uart_tx_start(
 
 /**@}*/
 
-#endif /* RTOS_I2C_MASTER_H_ */
+#endif /* RTOS_UART_TX_H_ */

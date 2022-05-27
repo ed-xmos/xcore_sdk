@@ -20,31 +20,31 @@
 /**
  * The callback code bit positions and flag masks available for RTOS UART Rx.
  */
-#define COMPLETE_CB_CODE       0
-#define STARTED_CB_CODE        1
-#define START_BIT_ERR_CB_CODE  2
-#define PARITY_ERR_CB_CODE     3
-#define FRAMING_ERR_CB_CODE    4
-#define OVERRUN_ERR_CB_CODE    5
+#define UR_COMPLETE_CB_CODE       0
+#define UR_STARTED_CB_CODE        1
+#define UR_START_BIT_ERR_CB_CODE  2
+#define UR_PARITY_ERR_CB_CODE     3
+#define UR_FRAMING_ERR_CB_CODE    4
+#define UR_OVERRUN_ERR_CB_CODE    5
 
-#define COMPLETE_CB_FLAG        (1 << COMPLETE_CB_CODE)
-#define STARTED_CB_FLAG         (1 << STARTED_CB_CODE)
-#define START_BIT_ERR_CB_FLAG   (1 << START_BIT_ERR_CB_CODE)
-#define PARITY_ERR_CB_FLAG      (1 << PARITY_ERR_CB_CODE)
-#define FRAMING_ERR_CB_FLAG     (1 << FRAMING_ERR_CB_CODE)
-#define OVERRUN_ERR_CB_FLAG     (1 << OVERRUN_ERR_CB_CODE)
+#define UR_COMPLETE_CB_FLAG        (1 << UR_COMPLETE_CB_CODE)
+#define UR_STARTED_CB_FLAG         (1 << UR_STARTED_CB_CODE)
+#define UR_START_BIT_ERR_CB_FLAG   (1 << UR_START_BIT_ERR_CB_CODE)
+#define UR_PARITY_ERR_CB_FLAG      (1 << UR_PARITY_ERR_CB_CODE)
+#define UR_FRAMING_ERR_CB_FLAG     (1 << UR_FRAMING_ERR_CB_CODE)
+#define UR_OVERRUN_ERR_CB_FLAG     (1 << UR_OVERRUN_ERR_CB_CODE)
 
-#if (START_BIT_ERR_CB_CODE != UART_START_BIT_ERROR_VAL)
+#if (UR_START_BIT_ERR_CB_CODE != UART_START_BIT_ERROR_VAL)
 #error Please align the HIL uart_callback_code_t with CB codes in rtos_uart_rx.c
 #endif
 
-#define RX_ERROR_FLAGS (START_BIT_ERR_CB_FLAG | PARITY_ERR_CB_FLAG | FRAMING_ERR_CB_FLAG)
-#define RX_ALL_FLAGS (COMPLETE_CB_FLAG | STARTED_CB_FLAG | RX_ERROR_FLAGS)
+#define RX_ERROR_FLAGS (UR_START_BIT_ERR_CB_FLAG | UR_PARITY_ERR_CB_FLAG | UR_FRAMING_ERR_CB_FLAG)
+#define RX_ALL_FLAGS (UR_COMPLETE_CB_FLAG | UR_STARTED_CB_FLAG | RX_ERROR_FLAGS)
 
 
 /**
- * The size of buffer between the ISR and the appthread. This is not the same as 
- * app_byte_buffer_size which can be of any size.
+ * The size of the byte buffer between the ISR and the appthread. This is not the same as 
+ * app_byte_buffer_size which can be of any size, specified at device start.
  */
 #ifndef RTOS_UART_RX_BUF_LEN
 #define RTOS_UART_RX_BUF_LEN 8
@@ -57,7 +57,7 @@
 #define RTOS_UART_RX_CALLBACK_ATTR __attribute__((fptrgroup("rtos_uart_rx_callback_fptr_grp")))
 
 /**
- * This attribute must be specified on all RTOS UART rx callback functions
+ * This attribute must be specified on all RTOS UART functions
  * provided by the application to allow compiler stack calculation.
  */
 #define RTOS_UART_RX_CALL_ATTR __attribute__((fptrgroup("rtos_uart_rx_call_fptr_grp")))
@@ -109,11 +109,10 @@ typedef void (*rtos_uart_rx_error_t)(rtos_uart_rx_t *ctx, uint8_t err_flags);
  *
  * The members in this struct should not be accessed directly.
  */
-
-
 struct rtos_uart_rx_struct {
     uart_rx_t dev;
 
+    /* TODO Not currently used. Either incorporate or stick with streambuffer usages */
     RTOS_UART_RX_CALL_ATTR void (*read)(rtos_uart_rx_t *, uint8_t buf[], size_t *num_bytes);
 
     void *app_data;
@@ -134,20 +133,20 @@ struct rtos_uart_rx_struct {
 };
 
 /**
- * Initializes an RTOS UART slave driver instance.
+ * Initializes an RTOS UART rx driver instance.
  * This must only be called by the tile that owns the driver instance. It should be
  * called before starting the RTOS, and must be called before calling rtos_uart_rx_start().
  *
  * \param uart_rx_ctx A pointer to the UART rx driver instance to initialize.
- * \param io_core_mask  A bitmask representing the cores on which the low level I2C I/O thread
+ * \param io_core_mask  A bitmask representing the cores on which the low UART Rx thread
  *                      created by the driver is allowed to run. Bit 0 is core 0, bit 1 is core 1,
  *                      etc.
- * \param p_scl         The port containing SCL. This must be a 1-bit port and
- *                      different than \p p_sda.
- * \param p_sda         The port containing SDA. This must be a 1-bit port and
- *                      different than \p p_scl.
- * \param device_addr   The 7-bit address of the slave device.
- */
+ * \param rx_port       The port containing the receive pin
+ * \param baud_rate     The baud rate of the UART in bits per second.
+ * \param data_bits     The number of data bits per frame sent.
+ * \param parity        The type of parity used. See uart_parity_t above.
+ * \param stop_bits     The number of stop bits asserted at the of the frame. 
+ * \param tmr           The resource id of the timer to be used by the UART Rx. */
  
 void rtos_uart_rx_init(
         rtos_uart_rx_t *uart_rx_ctx,
@@ -168,16 +167,16 @@ void rtos_uart_rx_init(
  *
  * \param uart_rx_ctx       A pointer to the UART rx driver instance to start.
  * \param app_data          A pointer to application specific data to pass to
- *                          the callback functions.
+ *                          the callback functions available in rtos_uart_rx_struct.
  * \param start             The callback function that is called when the driver's
  *                          thread starts. This is optional and may be NULL.
- * \param rx                The callback function to receive data from the bus master.
- * \param tx_start          The callback function to transmit data to the bus master.
- * \param tx_done           The callback function that is notified when transmits are
- *                          complete. This is optional and may be NULL.
- * \param interrupt_core_id The ID of the core on which to enable the I2C interrupt.
+ * \param rx                The callback function to indicate data received by the UART.
+ * \param error             The callback function called when a reception error has occured.
+ * \param interrupt_core_id The ID of the core on which to enable the UART rx interrupt.
  * \param priority          The priority of the task that gets created by the driver to
  *                          call the callback functions.
+ * \param app_rx_buff_size  The size in bytes of the RTOS xstreambuffer used to buffer 
+ *                          received words for the application.
  */
 void rtos_uart_rx_start(
         rtos_uart_rx_t *uart_rx_ctx,
@@ -187,11 +186,9 @@ void rtos_uart_rx_start(
         rtos_uart_rx_error_t error,
         unsigned interrupt_core_id,
         unsigned priority,
-        size_t app_byte_buffer_size);
-
-
+        size_t app_rx_buff_size);
 
 
 /**@}*/
 
-#endif /* RTOS_I2C_SLAVE_H_ */
+#endif /* RTOS_UART_RX */
