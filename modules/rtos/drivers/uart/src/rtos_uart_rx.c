@@ -49,11 +49,11 @@ static void uart_rx_hil_thread(rtos_uart_rx_t *ctx)
     (void) s_chan_in_byte(ctx->c.end_a);
 
     // rtos_printf("UART Rx HIL on tile %d core %d\n", THIS_XCORE_TILE, rtos_core_id_get());
-
+    
+    /* We cannot afford for the RX to be block or any ISRs in between frames */
+    rtos_interrupt_mask_all();
     for (;;) {
-        rtos_interrupt_mask_all();
         uint8_t byte = uart_rx(&ctx->dev);
-        rtos_interrupt_unmask_all();
 
         // Now store byte and send along with error flags. These will stay in synch.
         s_chan_out_byte(ctx->c.end_a, byte);
