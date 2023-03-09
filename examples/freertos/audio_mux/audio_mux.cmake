@@ -39,7 +39,7 @@ set(APP_LINK_OPTIONS
 set(APP_COMMON_LINK_LIBRARIES
     rtos::freertos_usb
     lib_src
-    sln_voice::example::audio_mux::xcore_ai_explorer
+    sw_xvf3800::bsp_config::xvf3600_evk
 )
 
 #**********************
