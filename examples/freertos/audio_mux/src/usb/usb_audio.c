@@ -114,6 +114,7 @@ void usb_audio_send(rtos_intertile_t *intertile_ctx,
                     int32_t **frame_buffers,
                     size_t num_chans)
 {
+    rtos_printf("usb_audio_send\n");
     samp_t usb_audio_in_frame[appconfAUDIO_PIPELINE_FRAME_ADVANCE][CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX];
     int32_t *frame_buf_ptr = (int32_t *) frame_buffers;
 
@@ -253,13 +254,18 @@ void usb_audio_out_task(void *arg)
          * the stream buffer is reset after this task has been notified.
          */
         if (bytes_received > 0) {
-            xassert(bytes_received == sizeof(usb_audio_out_frame));
+            // xassert(bytes_received == sizeof(usb_audio_out_frame));
 
-            rtos_intertile_tx(
-                    intertile_ctx,
-                    appconfUSB_AUDIO_PORT,
-                    usb_audio_out_frame,
-                    bytes_received);
+            // rtos_intertile_tx(
+            //         intertile_ctx,
+            //         appconfUSB_AUDIO_PORT,
+            //         usb_audio_out_frame,
+            //         bytes_received);
+
+            usb_audio_send(intertile_ctx,
+                            appconfAUDIO_PIPELINE_FRAME_ADVANCE,
+                            usb_audio_out_frame,
+                            CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_RX);
         }
     }
 }
