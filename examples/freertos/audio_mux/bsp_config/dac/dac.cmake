@@ -1,18 +1,18 @@
 
 ## Create custom board targets for dacs
-add_library(sln_voice_example_audio_mux_board_support_dac_aic3204 INTERFACE)
-target_sources(sln_voice_example_audio_mux_board_support_dac_aic3204
+add_library(sw_xvf3800_board_support_xvf3600_evk_dac_dac3101 INTERFACE)
+target_sources(sw_xvf3800_board_support_xvf3600_evk_dac_dac3101
     INTERFACE
-        ${CMAKE_CURRENT_LIST_DIR}/aic3204/aic3204.c
+        ${CMAKE_CURRENT_LIST_DIR}/dac3101/dac3101.c
 )
-target_include_directories(sln_voice_example_audio_mux_board_support_dac_aic3204
+target_include_directories(sw_xvf3800_board_support_xvf3600_evk_dac_dac3101
     INTERFACE
-        ${CMAKE_CURRENT_LIST_DIR}/aic3204
+        ${CMAKE_CURRENT_LIST_DIR}/dac3101
 )
-target_compile_definitions(sln_voice_example_audio_mux_board_support_dac_aic3204
+target_compile_definitions(sw_xvf3800_board_support_xvf3600_evk_dac_dac3101
     INTERFACE
-        AIC3204=1
+        DAC3101=1
 )
 
 ## Create an alias
-add_library(sln_voice::example::audio_mux::dac::aic3204 ALIAS sln_voice_example_audio_mux_board_support_dac_aic3204)
+add_library(sw_xvf3800::bsp_config::dac::dac3101 ALIAS sw_xvf3800_board_support_xvf3600_evk_dac_dac3101)

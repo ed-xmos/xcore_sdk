@@ -40,6 +40,7 @@ set(APP_COMMON_LINK_LIBRARIES
     rtos::freertos_usb
     lib_src
     sw_xvf3800::bsp_config::xvf3600_evk
+    sw_xvf3800::bsp_config::dac::dac3101
 )
 
 #**********************

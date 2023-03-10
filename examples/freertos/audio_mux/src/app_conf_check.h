@@ -4,9 +4,9 @@
 #ifndef APP_CONF_CHECK_H_
 #define APP_CONF_CHECK_H_
 
-#if !XCOREAI_EXPLORER
-#error Only the XCORE-AI-EXPLORER Board is supported
-#endif
+// #if !XCOREAI_EXPLORER
+// #error Only the XCORE-AI-EXPLORER Board is supported
+// #endif
 
 #if appconfI2S_MODE != appconfI2S_MODE_MASTER
 #error I2S mode other than master is not currently supported

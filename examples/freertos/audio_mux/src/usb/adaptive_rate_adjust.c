@@ -26,6 +26,8 @@ int32_t dsp_math_multiply( int32_t input1_value, int32_t input2_value, int32_t q
     return result;
 }
 
+#define XCOREAI_EXPLORER 1
+
 #if XK_VOICE_L71
 #define PORT_MCLK       PORT_MCLK_IN_OUT
 #elif XCOREAI_EXPLORER

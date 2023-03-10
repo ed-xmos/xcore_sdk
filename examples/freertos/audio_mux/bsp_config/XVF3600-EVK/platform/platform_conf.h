@@ -24,12 +24,12 @@
 #define I2C_TILE_NO     0
 
 // Assuming we only ever have I2C or SPI, not both.
-#define appconfI2C_IO_CORE                      1 /* Must be kept off core 0 with the RTOS tick ISR */
-#define appconfSPI_IO_CORE                     appconfI2C_IO_CORE /* Must be kept off core 0 with the RTOS tick ISR. Must be kept off appconfI2C_IO_CORE since i2c hil task is non preemptable */
+// #define appconfI2C_IO_CORE                      1 /* Must be kept off core 0 with the RTOS tick ISR */
+// #define appconfSPI_IO_CORE                     appconfI2C_IO_CORE /* Must be kept off core 0 with the RTOS tick ISR. Must be kept off appconfI2C_IO_CORE since i2c hil task is non preemptable */
 
-#define appconfI2C_ISR_CORE                     2 /* Must be kept off core 0 with the RTOS tick ISR. Must be kept off appconfI2C_IO_CORE since i2c hil task is non preemptable */
-#define appconfSPI_ISR_CORE                     appconfI2C_ISR_CORE /* Must be kept off core 0 with the RTOS tick ISR. Must be kept off appconfI2C_IO_CORE since i2c hil task is non preemptable */
-#define GPO_PWM_ISR_CORE                        appconfI2C_ISR_CORE
+// #define appconfI2C_ISR_CORE                     2 /* Must be kept off core 0 with the RTOS tick ISR. Must be kept off appconfI2C_IO_CORE since i2c hil task is non preemptable */
+// #define appconfSPI_ISR_CORE                     appconfI2C_ISR_CORE /* Must be kept off core 0 with the RTOS tick ISR. Must be kept off appconfI2C_IO_CORE since i2c hil task is non preemptable */
+// #define GPO_PWM_ISR_CORE                        appconfI2C_ISR_CORE
 
 #define I2C_SLAVE_ADDR       0x2C
 
@@ -57,7 +57,10 @@
 #define appconfGPIO_RPC_PRIORITY (configMAX_PRIORITIES/2)
 #endif /* appconfGPIO_RPC_PRIORITY */
 
-#define GPI_PORT_TILE_NO     1
+
+#ifndef appconfQSPI_FLASH_TASK_PRIORITY
+#define appconfQSPI_FLASH_TASK_PRIORITY          ( configMAX_PRIORITIES - 1 )
+#endif /* appconfQSPI_FLASH_TASK_PRIORITY */
 
 /*****************************************/
 /*  I/O and interrupt cores for Tile 1   */
