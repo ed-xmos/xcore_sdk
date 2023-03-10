@@ -207,10 +207,10 @@ void platform_init(chanend_t other_tile_c)
     rtos_intertile_init(intertile_ctx, other_tile_c);
 
     mclk_init(other_tile_c);
-    gpio_init();
-    flash_init();
-    i2c_init();
+    // gpio_init();
+    // flash_init();
+    // i2c_init();
     // mics_init();
-    i2s_init();
+    // i2s_init();
     usb_init();
 }
