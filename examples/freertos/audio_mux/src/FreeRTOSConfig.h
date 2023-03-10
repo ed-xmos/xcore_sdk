@@ -11,7 +11,7 @@ your application. */
 #define configCPU_CLOCK_HZ                      100000000
 
 #if ON_TILE(0)
-#define configNUM_CORES                         4
+#define configNUM_CORES                         2
 #endif
 #if ON_TILE(1)
 #define configNUM_CORES                         1
@@ -45,7 +45,7 @@ your application. */
 #define configSUPPORT_DYNAMIC_ALLOCATION        1
 #if ON_TILE(0)
 // #define configTOTAL_HEAP_SIZE                   128*1024
-#define configTOTAL_HEAP_SIZE                   22*1024
+#define configTOTAL_HEAP_SIZE                   20*1024
 #endif
 #if ON_TILE(1)
 // #define configTOTAL_HEAP_SIZE                   128*1024
