@@ -145,7 +145,7 @@ void startup_task(void *arg)
 
     platform_start();
 
-    audio_pipeline_init(NULL, NULL);
+    // audio_pipeline_init(NULL, NULL);
 
     mem_analysis();
     /*
