@@ -22,6 +22,7 @@
 #include "usb_audio.h"
 #include "audio_pipeline.h"
 
+#if 0
 void audio_pipeline_input(void *input_app_data,
                         int32_t **input_audio_frames,
                         size_t ch_count,
@@ -123,6 +124,8 @@ int audio_pipeline_output(void *output_app_data,
 
     return AUDIO_PIPELINE_FREE_FRAME;
 }
+
+#endif
 
 void vApplicationMallocFailedHook(void)
 {
