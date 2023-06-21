@@ -39,7 +39,7 @@ set(APP_LINK_OPTIONS
 set(APP_COMMON_LINK_LIBRARIES
     rtos::freertos_usb
     lib_src
-    xcore_iot::example::audio_mux::xcore_ai_explorer
+    xcore_iot::example::audio_mux::xvf3600_evk
 )
 
 #**********************

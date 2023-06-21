@@ -1,6 +1,7 @@
 ## XCORE_XS3A only examples
 if(${CMAKE_SYSTEM_NAME} STREQUAL XCORE_XS3A)
     ## Bare metal examples
+    include(${CMAKE_CURRENT_LIST_DIR}/spectrum/spectrum.cmake)
     include(${CMAKE_CURRENT_LIST_DIR}/bare-metal/explorer_board/explorer_board.cmake)
     include(${CMAKE_CURRENT_LIST_DIR}/bare-metal/visual_wake_words/visual_wake_words.cmake)
 

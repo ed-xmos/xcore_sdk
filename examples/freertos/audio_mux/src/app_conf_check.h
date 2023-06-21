@@ -5,7 +5,7 @@
 #define APP_CONF_CHECK_H_
 
 #if !XCOREAI_EXPLORER
-#error Only the XCORE-AI-EXPLORER Board is supported
+// #error Only the XCORE-AI-EXPLORER Board is supported
 #endif
 
 #if appconfI2S_MODE != appconfI2S_MODE_MASTER

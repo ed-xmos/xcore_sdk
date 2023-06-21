@@ -29,6 +29,9 @@ void audio_pipeline_input(void *input_app_data,
 {
     (void) input_app_data;
 
+    printstr("m\n");
+
+
 #if appconfMIC_INPUT
     static int flushed;
     while (!flushed) {
@@ -57,6 +60,7 @@ void audio_pipeline_input(void *input_app_data,
                       frame_count,
                       portMAX_DELAY);
 #endif
+
 
 #if appconfUSB_INPUT
     /*
