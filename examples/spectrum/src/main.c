@@ -7,14 +7,28 @@
 #include "hub75.h"
 #include "vnr_features_api.h"
 
+typedef enum colour_t{
+    RED=0,
+    GRN=1,
+    BLU=2
+} colour_t;
+
 void clear_screen(void){
     memset(frame, 0, sizeof(frame));
 }
 
-void horiz_line(unsigned x_start, unsigned y, unsigned len){
-    uint8_t *start_addr = &frame[0][y][x_start];
-    uint8_t *end_addr = &frame[0][y][x_start + len];
+void horiz_line(unsigned x_start, unsigned y, unsigned len, colour_t colour){
+    uint8_t *start_addr = &frame[colour][y][x_start];
+    uint8_t *end_addr = &frame[colour][y][x_start + len];
     memset(start_addr, 1, end_addr - start_addr);
+}
+
+void vert_line(unsigned x, unsigned y_start, unsigned len, colour_t colour){
+    uint8_t *start_addr = &frame[colour][y_start][x];
+    for(int i = 0; i < len; i++){
+        *start_addr = 1;
+        start_addr += HUB75_LINE_LENGTH;
+    }
 }
 
 DECLARE_JOB(test, (chanend_t));
@@ -36,7 +50,7 @@ void test(chanend_t c_samp){
         clear_screen();
 
         for(int i = 0; i < HUB75_LINE_LENGTH; i++){
-            int32_t samp = (features[i] >> 24) + 26;
+            int32_t samp = (features[i] >> 23) + 50;
 
             unsigned val = samp > 0 ? samp : 0;
             int y = HUB75_COLUMN_HEIGHT - val - 1;
@@ -47,8 +61,9 @@ void test(chanend_t c_samp){
                 y = HUB75_COLUMN_HEIGHT - 1;
             }
 
-            horiz_line(i, y, 1);
-            printf("%d %d\n", i, y);
+            // horiz_line(i, y, 1);
+            vert_line(i, y, HUB75_COLUMN_HEIGHT-y, RED);
+            // printf("%d %d\n", i, y);
         }
         // printf("ft samp: %ld , y: %u\n", samp, y);
     }

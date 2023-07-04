@@ -16,7 +16,7 @@
 /** Number of filters in the MEL filterbank used in the VNR feature extraction.
  * @ingroup vnr_defines
  */
-#define VNR_MEL_FILTERS (128)
+#define VNR_MEL_FILTERS (64)
 
 /** Number of frames that make up a full set of features for the inference to run on.
  * @ingroup vnr_defines

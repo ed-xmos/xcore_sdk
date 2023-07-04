@@ -3,10 +3,10 @@
 #include <string.h>
 #include <limits.h>
 #include "vnr_features_priv.h"
-#include "mel_filter_2048_128_compact.h"
+#include "mel_filter_2048_64_compact.h"
 
-#define mel_filter_compact_start_bins   mel_filter_2048_128_compact_start_bins
-#define mel_filter_compact_q31          mel_filter_2048_128_compact_q31
+#define mel_filter_compact_start_bins   mel_filter_2048_64_compact_start_bins
+#define mel_filter_compact_q31          mel_filter_2048_64_compact_q31
 
 
 void vnr_priv_forward_fft(bfp_complex_s32_t *X, int32_t *x_data) {

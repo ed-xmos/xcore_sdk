@@ -325,7 +325,7 @@ def test_equivalence_range():
             assert test_equivalence(fft_size, nmels)
     print("PASS")
 
-# python gen_mel_filters.py -fft_size 2048 -mel_size=128 -path=. -type=compact
+# python gen_mel_filters.py -fft_size 2048 -mel_size=64 -path=. -type=compact
 def main():
     parser = argparse.ArgumentParser(description='Generate MEL tables script')
     parser.add_argument('-fft_size', action="store", type=int)
@@ -334,7 +334,7 @@ def main():
     parser.add_argument('-type', action="store")
     args = parser.parse_args()
 
-    Fs = 48000
+    Fs = 16000
 
     fbank, band_start_bins = get_filterbanks(args.mel_size, args.fft_size, Fs)
     fbank_standard = fbank[ :-1]
