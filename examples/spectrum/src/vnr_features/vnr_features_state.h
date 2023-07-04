@@ -21,7 +21,7 @@
  *
  * @ingroup vnr_features_state   
  */
-#define VNR_PROC_FRAME_LENGTH (2048)
+#define VNR_PROC_FRAME_LENGTH (1024)
 
 /** @brief VNR new samples frame size
  * This is the number of samples of new data that the VNR processes every frame. 240 samples at 16kHz is 15msec.
@@ -29,7 +29,7 @@
  *
  * @ingroup vnr_features_state
  */
-#define VNR_FRAME_ADVANCE (1024)
+#define VNR_FRAME_ADVANCE (512)
 
 /** Number of bins of spectrum data computed when doing a DFT of a VNR_PROC_FRAME_LENGTH length time domain vector. The
  * VNR_FD_FRAME_LENGTH spectrum values represent the bins from DC to Nyquist. NOT USER MODIFIABLE.

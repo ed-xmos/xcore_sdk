@@ -75,13 +75,7 @@ void hub75_driver(void){
             port_out(p_la, 0);
             hwtimer_delay(t_timing, HUB75_DELAY);
 
-            // hwtimer_delay(t_timing, XS1_TIMER_HZ);
-
-
             port_out(p_addr_oe, (addr << 3));
-
-            // hwtimer_delay(t_timing, XS1_TIMER_HZ * 5);
-
 
             hwtimer_delay(t_timing, HUB75_OE_DELAY);
         }

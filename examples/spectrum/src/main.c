@@ -6,12 +6,13 @@
 #include "mic_array_vanilla.h"
 #include "hub75.h"
 #include "vnr_features_api.h"
+#include "app_conf.h"
 
-typedef enum colour_t{
-    RED=0,
-    GRN=1,
-    BLU=2
-} colour_t;
+#if VNR_FRAME_ADVANCE != appconfAUDIO_FRAME_LENGTH
+#error VNR_FRAME_ADVANCE != appconfAUDIO_FRAME_LENGTH
+#endif
+
+
 
 void clear_screen(void){
     memset(frame, 0, sizeof(frame));
