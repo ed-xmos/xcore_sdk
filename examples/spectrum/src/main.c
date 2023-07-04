@@ -35,16 +35,22 @@ void test(chanend_t c_samp){
 
         clear_screen();
 
-        int32_t samp = features[10];
+        for(int i = 0; i < HUB75_LINE_LENGTH; i++){
+            int32_t samp = (features[i] >> 24) + 26;
 
-        unsigned val = abs(samp) >> 13;
-        int y = HUB75_COLUMN_HEIGHT - val - 1;
-        if(y < 0){
-            y = 0;
+            unsigned val = samp > 0 ? samp : 0;
+            int y = HUB75_COLUMN_HEIGHT - val - 1;
+            if(y < 0){
+                y = 0;
+            }
+            if(y > HUB75_COLUMN_HEIGHT - 1){
+                y = HUB75_COLUMN_HEIGHT - 1;
+            }
+
+            horiz_line(i, y, 1);
+            printf("%d %d\n", i, y);
         }
-
-        horiz_line(0, y, 5);
-        printf("ft rx: %ld , y: %u\n", samp, y);
+        // printf("ft samp: %ld , y: %u\n", samp, y);
     }
 
 }
@@ -86,7 +92,7 @@ void ma_servicer(chanend_t c_ma, chanend_t c_samp){
 
         int32_t *features = vnr_feature_state.feature_buffers[VNR_PATCH_WIDTH - 1];
 
-        printf("%ld\n", features[10]);
+        // printf("%ld\n", features[10]);
 
         chan_out_buf_word(c_samp, (uint32_t*)features, VNR_MEL_FILTERS);
     }
