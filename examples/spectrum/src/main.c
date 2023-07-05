@@ -3,16 +3,19 @@
 #include <xcore/parallel.h>
 #include "platform_init.h"
 #include "mic_array.h"
-#include "mic_array_vanilla.h"
+// #include "mic_array_vanilla.h"
 #include "hub75.h"
 #include "vnr_features_api.h"
 #include "app_conf.h"
+#include "mic_array_task.h"
 
 #if VNR_FRAME_ADVANCE != appconfAUDIO_FRAME_LENGTH
 #error VNR_FRAME_ADVANCE != appconfAUDIO_FRAME_LENGTH
 #endif
 
-
+#if VNR_MEL_FILTERS != HUB75_LINE_LENGTH
+#error VNR_MEL_FILTERS != HUB75_LINE_LENGTH
+#endif
 
 void clear_screen(void){
     memset(frame, 0, sizeof(frame));
@@ -42,28 +45,37 @@ void test(chanend_t c_samp){
     // write_char('X', 10, 10);
     write_string("Hello wrld", 0, 2);
 
+    unsigned y_peaks[VNR_MEL_FILTERS];
+    for(int i = 0; i < VNR_MEL_FILTERS; i++) y_peaks[i] = 0;
 
 
     while(1){
         int32_t features[VNR_MEL_FILTERS];
+
         chan_in_buf_word(c_samp, (uint32_t*)features, VNR_MEL_FILTERS);
 
         clear_screen();
 
         for(int i = 0; i < HUB75_LINE_LENGTH; i++){
-            int32_t samp = (features[i] >> 23) + 50;
+            int32_t samp = (features[HUB75_LINE_LENGTH - i - 1] >> 23) + 50;
 
             unsigned val = samp > 0 ? samp : 0;
-            int y = HUB75_COLUMN_HEIGHT - val - 1;
-            if(y < 0){
-                y = 0;
-            }
+            int y = val;
             if(y > HUB75_COLUMN_HEIGHT - 1){
                 y = HUB75_COLUMN_HEIGHT - 1;
             }
 
+            if(y_peaks[i] > 0) y_peaks[i] -= 1;
+
+            if(y > y_peaks[i]){
+                y_peaks[i] = y;
+            }
+
             // horiz_line(i, y, 1);
-            vert_line(i, y, HUB75_COLUMN_HEIGHT-y, RED);
+            vert_line(i, 0, y, GRN);
+            vert_line(i, y_peaks[i], 1, RED);
+
+            vert_line(0,0,1, BLUE);
             // printf("%d %d\n", i, y);
         }
         // printf("ft samp: %ld , y: %u\n", samp, y);
@@ -121,10 +133,9 @@ void main_tile1(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3){
     channel_t c_ma = chan_alloc();
 
     app_pll_init();
-    ma_vanilla_init();
 
     PAR_JOBS (
-        PJOB(ma_vanilla_task, (c_ma.end_a)),
+        PJOB(mic_array_task, (c_ma.end_a)),
         PJOB(ma_servicer, (c_ma.end_b, c0))
         );
     printf("Exit 1\n");

@@ -1,7 +1,7 @@
 #**********************
 # Gather Sources
 #**********************
-file(GLOB_RECURSE APP_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.c )
+file(GLOB_RECURSE APP_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.c ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 set(APP_INCLUDES
     ${CMAKE_CURRENT_LIST_DIR}/src
     ${CMAKE_CURRENT_LIST_DIR}/src/vnr_features
@@ -55,9 +55,9 @@ target_compile_options(spectrum PRIVATE ${APP_COMPILER_FLAGS})
 target_link_libraries(spectrum PUBLIC core::general io::all framework_core_multitile_support)
 target_link_options(spectrum PRIVATE ${APP_LINK_OPTIONS})
 
-# MCLK_FREQ,  PDM_FREQ, MIC_COUNT,  SAMPLES_PER_FRAME
-mic_array_vanilla_add( spectrum
-    24576000  3072000   2           512 )
+# # MCLK_FREQ,  PDM_FREQ, MIC_COUNT,  SAMPLES_PER_FRAME
+# mic_array_vanilla_add( spectrum
+#     24576000  3072000   2           512 )
 
 #**********************
 # Create run and debug targets

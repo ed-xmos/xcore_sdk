@@ -12,7 +12,7 @@
 #include "soc.h"
 #include "xcore_utils.h"
 #include "mic_array.h"
-#include "mic_array_vanilla.h"
+// #include "mic_array_vanilla.h"
 
 /* App headers */
 #include "tile_support.h"

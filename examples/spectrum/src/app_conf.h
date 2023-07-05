@@ -5,17 +5,25 @@
 #define APP_CONF_H_
 
 /* Audio Pipeline Configuration */
+#define MIC_ARRAY_CONFIG_MIC_COUNT              2
+#define MIC_ARRAY_CONFIG_USE_DC_ELIMINATION     1
+#define MIC_ARRAY_CONFIG_SAMPLES_PER_FRAME      512
 #define appconfAUDIO_FRAME_LENGTH            	MIC_ARRAY_CONFIG_SAMPLES_PER_FRAME
 #define appconfMIC_COUNT                        MIC_ARRAY_CONFIG_MIC_COUNT
 #define appconfFRAMES_IN_ALL_CHANS              (appconfAUDIO_FRAME_LENGTH * appconfMIC_COUNT)
-#define appconfEXP                              -31
-#define appconfINITIAL_GAIN                     20
-#define appconfAUDIO_PIPELINE_MAX_GAIN          60
-#define appconfAUDIO_PIPELINE_MIN_GAIN          0
-#define appconfAUDIO_PIPELINE_GAIN_STEP         4
-#define appconfPOWER_THRESHOLD                  (float)0.00001
 #define appconfAUDIO_CLOCK_FREQUENCY            24576000
 #define appconfPDM_CLOCK_FREQUENCY              3072000
-#define appconfPIPELINE_AUDIO_SAMPLE_RATE       16000
+#define appconfPIPELINE_AUDIO_SAMPLE_RATE       32000
+#define MIC_ARRAY_CONFIG_USE_DC_ELIMINATION     1
+#define MIC_ARRAY_CONFIG_MIC_IN_COUNT           2
+#define MIC_ARRAY_CONFIG_USE_DDR                1
+#define MIC_ARRAY_CONFIG_MCLK_FREQ              appconfAUDIO_CLOCK_FREQUENCY
+#define MIC_ARRAY_CONFIG_PDM_FREQ               appconfPDM_CLOCK_FREQUENCY
+
+#define SETSR(c)                asm volatile("setsr %0" : : "n"(c));   
+#define CLRSR(c)                asm volatile("clrsr %0" : : "n"(c));
+#define SET_HIGH_PRIORITY()     SETSR(XS1_SR_QUEUE_MASK)    // Force the xcore to schedule once every 5 processor clocks
+#define SET_FAST_MODE()         SETSR(XS1_SR_FAST_MASK)     // Force the xcore to schedule even if blocked on event
+#define CLEAR_KEDI()            CLRSR(XS1_SR_KEDI_MASK)
 
 #endif /* APP_CONF_H_ */
