@@ -22,7 +22,15 @@ port_t p_qspi_cs_n = XS1_PORT_1B;
 
 hwtimer_t t_timing;
 
-uint8_t frame[3][HUB75_COLUMN_HEIGHT][HUB75_LINE_LENGTH] = {{{0}}};
+
+frame_t frame = {{{0}}};
+
+static frame_t *volatile disp_frame;
+
+
+void flip(frame_t *new_frame){
+    disp_frame = new_frame;
+}
 
 void hub75_driver(void){
     port_enable(p_r1);
@@ -40,21 +48,35 @@ void hub75_driver(void){
 
     printf("Running HUB75 with delay: %d\n", HUB75_DELAY);
 
+    frame_t *curr_frame = NULL;
+
     t_timing = hwtimer_alloc();
+    uint32_t t0 = get_reference_time();
+    uint32_t counter = 0;
 
     while(1){
+        if(disp_frame != curr_frame){
+            curr_frame = disp_frame;
+        }
+        while(curr_frame == NULL){
+            hwtimer_delay(t_timing, HUB75_OE_DELAY);
+            curr_frame = disp_frame;
+            // Spin until valid
+        }
+        // printf("%p\n", curr_frame);
+
         for(int addr = 0; addr < 16; addr++){
             port_out(p_addr_oe, HUB75_OE | (addr << 3));
             port_out(p_ck, 0);
             port_out(p_la, 0);
 
             for(int i = 0; i < HUB75_LINE_LENGTH; i++){
-                uint8_t r1 = frame[0][addr][i];
-                uint8_t g1 = frame[1][addr][i];
-                uint8_t b1 = frame[2][addr][i];
-                uint8_t r2 = frame[0][addr + HUB75_COLUMN_HEIGHT / 2][i];
-                uint8_t g2 = frame[1][addr + HUB75_COLUMN_HEIGHT / 2][i];
-                uint8_t b2 = frame[2][addr + HUB75_COLUMN_HEIGHT / 2][i];
+                uint8_t r1 = (*curr_frame)[0][addr][i];
+                uint8_t g1 = (*curr_frame)[1][addr][i];
+                uint8_t b1 = (*curr_frame)[2][addr][i];
+                uint8_t r2 = (*curr_frame)[0][addr + HUB75_COLUMN_HEIGHT / 2][i];
+                uint8_t g2 = (*curr_frame)[1][addr + HUB75_COLUMN_HEIGHT / 2][i];
+                uint8_t b2 = (*curr_frame)[2][addr + HUB75_COLUMN_HEIGHT / 2][i];
 
 
                 port_out(p_r1, r1);
@@ -79,6 +101,15 @@ void hub75_driver(void){
 
             hwtimer_delay(t_timing, HUB75_OE_DELAY);
         }
+
+        uint32_t t1 = get_reference_time();
+        counter += 1;
+        if(t1 - t0 >= XS1_TIMER_HZ){
+            t0 += XS1_TIMER_HZ;
+            printf("hub: %lu\n", counter);
+            counter = 0;
+        }
+
     }
 
 }
@@ -342,19 +373,19 @@ const unsigned char f8x6fv[256][6]= {
      { 0x00,0x00,0x00,0x00,0x00,0x00 } //Ascii-255
 };
 
-void write_char(char c, int x, int y){
+void write_char(frame_t *frame, char c, int x, int y){
     for(int row = 0; row < 6; row++){
         uint8_t vb = f8x6fv[c][row];   
         for(int col = 0; col < 8; col++){
             uint8_t b = vb >> col;
-            frame[0][col + y][row + x] = b;
+            (*frame)[0][col + y][row + x] = b;
         }
     }
 }
 
-void write_string(char str[], int x, int y){
+void write_string(frame_t *frame, char str[], int x, int y){
     for(int i = 0; i < strlen(str); i++){
         char ch = str[i];
-        write_char(ch, x + i * 6, y);
+        write_char(frame, ch, x + i * 6, y);
     }
 }

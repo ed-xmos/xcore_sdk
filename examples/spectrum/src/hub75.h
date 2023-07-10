@@ -13,8 +13,7 @@
 
 #define HUB75_OE            (1 << 7)
 
-typedef uint8_t frame_t[3][HUB75_COLUMN_HEIGHT][HUB75_LINE_LENGTH] ;
-extern uint8_t frame[3][HUB75_COLUMN_HEIGHT][HUB75_LINE_LENGTH];
+typedef uint8_t frame_t[3][HUB75_COLUMN_HEIGHT][HUB75_LINE_LENGTH];
 
 typedef enum colour_t{
     RED=0,
@@ -26,6 +25,8 @@ typedef enum colour_t{
 DECLARE_JOB(hub75_driver, (void));
 void hub75_driver(void);
 
-void write_char(char c, int x, int y);
+void write_char(frame_t *frame, char c, int x, int y);
 
-void write_string(char str[], int x, int y);
+void write_string(frame_t *frame, char str[], int x, int y);
+
+void flip(frame_t *new_frame);

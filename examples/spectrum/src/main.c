@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <xcore/parallel.h>
+#include <xcore/hwtimer.h>
 #include "platform_init.h"
 #include "mic_array.h"
 // #include "mic_array_vanilla.h"
@@ -17,18 +18,20 @@
 #error VNR_MEL_FILTERS != HUB75_LINE_LENGTH
 #endif
 
-void clear_screen(void){
-    memset(frame, 0, sizeof(frame));
+
+
+void clear_screen(frame_t *frame){
+    memset(frame, 0, sizeof(frame_t));
 }
 
-void horiz_line(unsigned x_start, unsigned y, unsigned len, colour_t colour){
-    uint8_t *start_addr = &frame[colour][y][x_start];
-    uint8_t *end_addr = &frame[colour][y][x_start + len];
+void horiz_line(frame_t *frame, unsigned x_start, unsigned y, unsigned len, colour_t colour){
+    uint8_t *start_addr = &(*frame)[colour][y][x_start];
+    uint8_t *end_addr = &(*frame)[colour][y][x_start + len];
     memset(start_addr, 1, end_addr - start_addr);
 }
 
-void vert_line(unsigned x, unsigned y_start, unsigned len, colour_t colour){
-    uint8_t *start_addr = &frame[colour][y_start][x];
+void vert_line(frame_t *frame, unsigned x, unsigned y_start, unsigned len, colour_t colour){
+    uint8_t *start_addr = &(*frame)[colour][y_start][x];
     for(int i = 0; i < len; i++){
         *start_addr = 1;
         start_addr += HUB75_LINE_LENGTH;
@@ -37,24 +40,33 @@ void vert_line(unsigned x, unsigned y_start, unsigned len, colour_t colour){
 
 DECLARE_JOB(test, (chanend_t));
 void test(chanend_t c_samp){
-    frame[0][0][0] = 1;
-    frame[1][31][0] = 1;
-    frame[1][0][63] = 1;
-    frame[2][31][63] = 1;
+    // frame[0][0][0] = 1;
+    // frame[1][31][0] = 1;
+    // frame[1][0][63] = 1;
+    // frame[2][31][63] = 1;
+
+    frame_t frames[2] = {{{{0}}}};
+    unsigned frame_idx = 0;
 
     // write_char('X', 10, 10);
-    write_string("Hello wrld", 0, 2);
+    // write_string(frame, "Hello wrld", 0, 2);
 
     unsigned y_peaks[VNR_MEL_FILTERS];
     for(int i = 0; i < VNR_MEL_FILTERS; i++) y_peaks[i] = 0;
 
+    // hwtimer_t t_timing = hwtimer_alloc();
+    uint32_t t0 = get_reference_time();
+    uint32_t counter = 0;
+
 
     while(1){
+        frame_t *write_frame = &frames[frame_idx];
+
         int32_t features[VNR_MEL_FILTERS];
 
         chan_in_buf_word(c_samp, (uint32_t*)features, VNR_MEL_FILTERS);
 
-        clear_screen();
+        clear_screen(write_frame);
 
         for(int i = 0; i < HUB75_LINE_LENGTH; i++){
             int32_t samp = (features[HUB75_LINE_LENGTH - i - 1] >> 23) + 50;
@@ -65,20 +77,33 @@ void test(chanend_t c_samp){
                 y = HUB75_COLUMN_HEIGHT - 1;
             }
 
-            if(y_peaks[i] > 0) y_peaks[i] -= 1;
+            if(counter % 2 == 0){
+                if(y_peaks[i] > 0) y_peaks[i] -= 1;
+            }
 
             if(y > y_peaks[i]){
                 y_peaks[i] = y;
             }
 
             // horiz_line(i, y, 1);
-            vert_line(i, 0, y, GRN);
-            vert_line(i, y_peaks[i], 1, RED);
+            vert_line(write_frame, i, 0, y, GRN);
+            vert_line(write_frame, i, y_peaks[i], 1, RED);
 
-            vert_line(0,0,1, BLUE);
+            vert_line(write_frame, 0,0,1, BLUE);
             // printf("%d %d\n", i, y);
         }
+
+        flip(write_frame);
+        frame_idx ^= 1;
         // printf("ft samp: %ld , y: %u\n", samp, y);
+
+        counter += 1;
+        uint32_t t1 = get_reference_time();
+        if(t1 - t0 >= XS1_TIMER_HZ){
+            t0 += XS1_TIMER_HZ;
+            printf("rend: %lu\n", counter);
+            counter = 0;
+        }
     }
 
 }
