@@ -49,7 +49,8 @@ void test(chanend_t c_samp){
     unsigned frame_idx = 0;
 
     // write_char('X', 10, 10);
-    // write_string(frame, "Hello wrld", 0, 2);
+    write_string(&frames[frame_idx], "Hello wrld", 0, 2);
+    flip(&frames[frame_idx]);
 
     unsigned y_peaks[VNR_MEL_FILTERS];
     for(int i = 0; i < VNR_MEL_FILTERS; i++) y_peaks[i] = 0;
@@ -57,7 +58,6 @@ void test(chanend_t c_samp){
     // hwtimer_t t_timing = hwtimer_alloc();
     uint32_t t0 = get_reference_time();
     uint32_t counter = 0;
-
 
     while(1){
         frame_t *write_frame = &frames[frame_idx];

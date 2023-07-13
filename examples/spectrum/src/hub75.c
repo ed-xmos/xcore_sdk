@@ -44,6 +44,9 @@ void hub75_driver(void){
     port_enable(p_addr_oe);
     port_enable(p_qspi_cs_n);
 
+    // port_set_no_ready(p_b1);
+    port_set_clock(p_b1, XS1_CLKBLK_REF); // XFLASH leaves this port after a QSPI boot in a weird state so reset it to use the ref clk
+
     port_out(p_qspi_cs_n, 1); // Ensure we don't send garbage to QSPI FLASH
 
     printf("Running HUB75 with delay: %d\n", HUB75_DELAY);
@@ -91,6 +94,7 @@ void hub75_driver(void){
                 hwtimer_delay(t_timing, HUB75_DELAY); // hold
                 port_out(p_ck, 0);
             }
+
             hwtimer_delay(t_timing, HUB75_DELAY);
             port_out(p_la, 1);
             hwtimer_delay(t_timing, HUB75_DELAY);
@@ -101,6 +105,7 @@ void hub75_driver(void){
 
             hwtimer_delay(t_timing, HUB75_OE_DELAY);
         }
+
 
         uint32_t t1 = get_reference_time();
         counter += 1;
