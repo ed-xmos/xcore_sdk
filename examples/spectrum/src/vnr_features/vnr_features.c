@@ -9,7 +9,7 @@
 #include "hanning_1024.h"
 
 
-// Using scalar unit but quick and dirty and works and is way fast enough
+// Using scalar unit but works and is way fast enough
 void apply_window(int32_t audio[VNR_PROC_FRAME_LENGTH], const int32_t window[VNR_PROC_FRAME_LENGTH/2]){
 #if ((VNR_PROC_FRAME_LENGTH / 2) % 8)
 #error Only window size multiples of 8 allowed

@@ -1,4 +1,4 @@
-const int window[512] = {
+const int32_t window[512] = {
 0,
 20252,
 81008,

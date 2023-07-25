@@ -25,8 +25,9 @@ typedef enum colour_t{
 DECLARE_JOB(hub75_driver, (void));
 void hub75_driver(void);
 
+void clear_screen(frame_t *frame);
+void horiz_line(frame_t *frame, unsigned x_start, unsigned y, unsigned len, colour_t colour);
+void vert_line(frame_t *frame, unsigned x, unsigned y_start, unsigned len, colour_t colour);
 void write_char(frame_t *frame, char c, int x, int y);
-
 void write_string(frame_t *frame, char str[], int x, int y);
-
 void flip(frame_t *new_frame);

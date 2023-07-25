@@ -2,9 +2,8 @@
 #include <stdlib.h>
 #include <xcore/parallel.h>
 #include <xcore/hwtimer.h>
-#include "platform_init.h"
+#include "app_pll_ctrl.h"
 #include "mic_array.h"
-// #include "mic_array_vanilla.h"
 #include "hub75.h"
 #include "vnr_features_api.h"
 #include "app_conf.h"
@@ -20,35 +19,11 @@
 
 
 
-void clear_screen(frame_t *frame){
-    memset(frame, 0, sizeof(frame_t));
-}
-
-void horiz_line(frame_t *frame, unsigned x_start, unsigned y, unsigned len, colour_t colour){
-    uint8_t *start_addr = &(*frame)[colour][y][x_start];
-    uint8_t *end_addr = &(*frame)[colour][y][x_start + len];
-    memset(start_addr, 1, end_addr - start_addr);
-}
-
-void vert_line(frame_t *frame, unsigned x, unsigned y_start, unsigned len, colour_t colour){
-    uint8_t *start_addr = &(*frame)[colour][y_start][x];
-    for(int i = 0; i < len; i++){
-        *start_addr = 1;
-        start_addr += HUB75_LINE_LENGTH;
-    }
-}
-
-DECLARE_JOB(test, (chanend_t));
-void test(chanend_t c_samp){
-    // frame[0][0][0] = 1;
-    // frame[1][31][0] = 1;
-    // frame[1][0][63] = 1;
-    // frame[2][31][63] = 1;
-
+DECLARE_JOB(renderer, (chanend_t));
+void renderer(chanend_t c_samp){
     frame_t frames[2] = {{{{0}}}};
     unsigned frame_idx = 0;
 
-    // write_char('X', 10, 10);
     write_string(&frames[frame_idx], "Hello wrld", 0, 2);
     flip(&frames[frame_idx]);
 
@@ -85,17 +60,13 @@ void test(chanend_t c_samp){
                 y_peaks[i] = y;
             }
 
-            // horiz_line(i, y, 1);
             vert_line(write_frame, i, 0, y, GRN);
             vert_line(write_frame, i, y_peaks[i], 1, RED);
 
-            vert_line(write_frame, 0,0,1, BLUE);
-            // printf("%d %d\n", i, y);
         }
 
         flip(write_frame);
         frame_idx ^= 1;
-        // printf("ft samp: %ld , y: %u\n", samp, y);
 
         counter += 1;
         uint32_t t1 = get_reference_time();
@@ -114,12 +85,12 @@ void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3){
 
     PAR_JOBS ( 
         PJOB(hub75_driver,()),
-        PJOB(test, (c1))
+        PJOB(renderer, (c1))
         );
 }
 
-DECLARE_JOB(ma_servicer, (chanend_t, chanend_t));
-void ma_servicer(chanend_t c_ma, chanend_t c_samp){
+DECLARE_JOB(feature_extraction, (chanend_t, chanend_t));
+void feature_extraction(chanend_t c_ma, chanend_t c_samp){
     
     int32_t ma_frame[appconfMIC_COUNT][appconfAUDIO_FRAME_LENGTH];
     
@@ -131,7 +102,6 @@ void ma_servicer(chanend_t c_ma, chanend_t c_samp){
     while(1){
         ma_frame_rx((int32_t *) ma_frame, c_ma, appconfMIC_COUNT, appconfAUDIO_FRAME_LENGTH);
 
-        // int32_t new_frame[VNR_FRAME_ADVANCE];
         int32_t *new_frame = ma_frame[0];
 
         complex_s32_t DWORD_ALIGNED input_frame[VNR_FD_FRAME_LENGTH];
@@ -157,12 +127,10 @@ void main_tile1(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3){
  
     channel_t c_ma = chan_alloc();
 
-    app_pll_init();
+    app_pll_init(); // Driver the 24.576MHz out on P1D on Tile[1]
 
     PAR_JOBS (
         PJOB(mic_array_task, (c_ma.end_a)),
-        PJOB(ma_servicer, (c_ma.end_b, c0))
+        PJOB(feature_extraction, (c_ma.end_b, c0))
         );
-    printf("Exit 1\n");
-
  }

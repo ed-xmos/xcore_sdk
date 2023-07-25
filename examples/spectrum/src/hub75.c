@@ -13,19 +13,18 @@ port_t p_b1 = XS1_PORT_1C;
 port_t p_r2 = XS1_PORT_1M;
 port_t p_g2 = XS1_PORT_1N;
 port_t p_b2 = XS1_PORT_1O;
+
 port_t p_ck = XS1_PORT_1L;
 port_t p_la = XS1_PORT_1P;
 
 port_t p_addr_oe = XS1_PORT_8C;
-
 port_t p_qspi_cs_n = XS1_PORT_1B;
 
-hwtimer_t t_timing;
 
 
 frame_t frame = {{{0}}};
 
-static frame_t *volatile disp_frame;
+static frame_t *volatile disp_frame = NULL;
 
 
 void flip(frame_t *new_frame){
@@ -44,27 +43,27 @@ void hub75_driver(void){
     port_enable(p_addr_oe);
     port_enable(p_qspi_cs_n);
 
-    // port_set_no_ready(p_b1);
     port_set_clock(p_b1, XS1_CLKBLK_REF); // XFLASH leaves this port after a QSPI boot in a weird state so reset it to use the ref clk
 
-    port_out(p_qspi_cs_n, 1); // Ensure we don't send garbage to QSPI FLASH
+    port_out(p_qspi_cs_n, 1); // Ensure we don't send garbage to QSPI FLASH by deselecting it
 
     printf("Running HUB75 with delay: %d\n", HUB75_DELAY);
 
     frame_t *curr_frame = NULL;
 
-    t_timing = hwtimer_alloc();
+    hwtimer_t t_timing = hwtimer_alloc();
     uint32_t t0 = get_reference_time();
     uint32_t counter = 0;
+
+    while(curr_frame == NULL){
+        hwtimer_delay(t_timing, HUB75_OE_DELAY);
+        curr_frame = disp_frame;
+        // Spin until valid
+    }
 
     while(1){
         if(disp_frame != curr_frame){
             curr_frame = disp_frame;
-        }
-        while(curr_frame == NULL){
-            hwtimer_delay(t_timing, HUB75_OE_DELAY);
-            curr_frame = disp_frame;
-            // Spin until valid
         }
         // printf("%p\n", curr_frame);
 
@@ -106,7 +105,7 @@ void hub75_driver(void){
             hwtimer_delay(t_timing, HUB75_OE_DELAY);
         }
 
-
+        // Track FPS
         uint32_t t1 = get_reference_time();
         counter += 1;
         if(t1 - t0 >= XS1_TIMER_HZ){
@@ -377,6 +376,24 @@ const unsigned char f8x6fv[256][6]= {
      { 0x00,0x3C,0x3C,0x3C,0x3C,0x00 }, //Ascii-254
      { 0x00,0x00,0x00,0x00,0x00,0x00 } //Ascii-255
 };
+
+void clear_screen(frame_t *frame){
+    memset(frame, 0, sizeof(frame_t));
+}
+
+void horiz_line(frame_t *frame, unsigned x_start, unsigned y, unsigned len, colour_t colour){
+    uint8_t *start_addr = &(*frame)[colour][y][x_start];
+    uint8_t *end_addr = &(*frame)[colour][y][x_start + len];
+    memset(start_addr, 1, end_addr - start_addr);
+}
+
+void vert_line(frame_t *frame, unsigned x, unsigned y_start, unsigned len, colour_t colour){
+    uint8_t *start_addr = &(*frame)[colour][y_start][x];
+    for(int i = 0; i < len; i++){
+        *start_addr = 1;
+        start_addr += HUB75_LINE_LENGTH;
+    }
+}
 
 void write_char(frame_t *frame, char c, int x, int y){
     for(int row = 0; row < 6; row++){

@@ -55,10 +55,6 @@ target_compile_options(spectrum PRIVATE ${APP_COMPILER_FLAGS})
 target_link_libraries(spectrum PUBLIC core::general io::all framework_core_multitile_support)
 target_link_options(spectrum PRIVATE ${APP_LINK_OPTIONS})
 
-# # MCLK_FREQ,  PDM_FREQ, MIC_COUNT,  SAMPLES_PER_FRAME
-# mic_array_vanilla_add( spectrum
-#     24576000  3072000   2           512 )
-
 #**********************
 # Create run and debug targets
 #**********************
